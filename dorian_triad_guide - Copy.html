@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dorian Triad — Complete Health &amp; Performance Guide</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{--bg:#090909;--bg2:#0C0E0C;--bg3:#101210;--surf:#131513;--border:#1A1C1A;--border2:#242624;
+  --gold:#C9A84C;--gold-l:#E8C870;--atlas:#00E587;--hades:#FF5C2B;--apollo:#4DA6FF;
+  --text:#EDE8E0;--text2:#9A9890;--text3:#585856;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',system-ui,sans-serif;font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased;}
+.nav{position:sticky;top:0;z-index:100;background:rgba(9,9,9,.96);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:0 28px;display:flex;align-items:center;gap:2px;overflow-x:auto;scrollbar-width:none;}
+.nav::-webkit-scrollbar{display:none;}
+.nav-logo{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:800;letter-spacing:.1em;color:var(--gold);white-space:nowrap;padding:13px 20px 13px 0;border-right:1px solid var(--border);margin-right:10px;}
+.nav a{font-size:10px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);text-decoration:none;padding:13px 10px;white-space:nowrap;transition:color .2s;}
+.nav a:hover{color:var(--gold);}
+.cover{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:80px 24px;background:radial-gradient(ellipse at 50% 25%,rgba(201,168,76,.07) 0%,transparent 55%);border-bottom:1px solid var(--border);position:relative;overflow:hidden;}
+.cover::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 48px,rgba(255,255,255,.013) 48px,rgba(255,255,255,.013) 49px);pointer-events:none;}
+.cover-eyebrow{font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:var(--gold);margin-bottom:24px;font-weight:600;}
+.cover-title{font-family:'Barlow Condensed',sans-serif;font-size:clamp(72px,11vw,130px);font-weight:800;letter-spacing:.04em;line-height:.88;color:var(--text);margin-bottom:6px;}
+.cover-title .ol{color:transparent;-webkit-text-stroke:1.5px var(--gold);}
+.cover-rule{width:48px;height:1px;background:var(--gold);margin:22px auto;opacity:.6;}
+.cover-sub{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:400;letter-spacing:.22em;color:var(--text3);text-transform:uppercase;margin-bottom:48px;}
+.cover-stats{display:flex;gap:52px;justify-content:center;flex-wrap:wrap;}
+.sv{font-family:'Barlow Condensed',sans-serif;font-size:34px;font-weight:700;color:var(--gold-l);display:block;letter-spacing:-.01em;}
+.sl{font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--text3);}
+.sec{max-width:1200px;margin:0 auto;padding:80px 28px;border-bottom:1px solid var(--border);}
+.sec-ey{font-size:9.5px;letter-spacing:.28em;text-transform:uppercase;color:var(--gold);font-weight:600;margin-bottom:8px;}
+.sec-ti{font-family:'Barlow Condensed',sans-serif;font-size:clamp(38px,5vw,60px);font-weight:800;letter-spacing:.02em;line-height:1;margin-bottom:10px;}
+.sec-de{font-size:13px;color:var(--text2);max-width:680px;line-height:1.65;margin-bottom:40px;}
+.card{background:var(--surf);border:.5px solid var(--border);border-radius:12px;padding:24px;}
+.card-sm{background:var(--surf);border:.5px solid var(--border);border-radius:8px;padding:16px;}
+.g2{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+.insight{background:rgba(201,168,76,.06);border:.5px solid rgba(201,168,76,.25);border-left:3px solid var(--gold);border-radius:4px;padding:14px 18px;font-size:12px;color:var(--text2);line-height:1.65;margin-bottom:28px;}
+.insight strong{color:var(--gold-l);}
+.cyc{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-bottom:48px;}
+.cp{border-radius:8px;padding:10px 4px;text-align:center;border:.5px solid;}
+.cp-d{font-size:8px;color:var(--text3);letter-spacing:.08em;margin-bottom:4px;}
+.cp-n{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:.05em;}
+.roi-wrap{display:grid;grid-template-columns:360px 1fr;gap:48px;align-items:start;}
+.roi-item{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:.5px solid var(--border);}
+.roi-item:last-child{border-bottom:none;}
+.roi-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0;margin-top:4px;}
+.roi-meta{flex:1;}
+.roi-label{font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px;}
+.roi-detail{font-size:11px;color:var(--text3);line-height:1.5;}
+.roi-right{text-align:right;min-width:100px;}
+.roi-pct{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:600;display:block;margin-bottom:6px;}
+.roi-bar-bg{background:var(--border2);border-radius:2px;height:4px;width:100px;margin-left:auto;}
+.roi-bar{height:4px;border-radius:2px;}
+.wk-card{background:var(--surf);border:.5px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:0;}
+.wk-head{padding:22px 24px 18px;border-bottom:.5px solid var(--border);}
+.wk-name{font-family:'Barlow Condensed',sans-serif;font-size:44px;font-weight:800;letter-spacing:.05em;line-height:1;}
+.wk-sub{font-size:12px;color:var(--text3);font-style:italic;margin-top:2px;}
+.wk-body{display:grid;grid-template-columns:260px 1fr;}
+.wk-wu{padding:20px 22px;border-right:.5px solid var(--border);}
+.wu-lbl{font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);font-weight:600;margin-bottom:14px;}
+.ws{display:flex;gap:10px;padding:7px 0;border-bottom:.5px solid var(--border);font-size:12px;color:var(--text2);}
+.ws:last-child{border-bottom:none;}
+.ws-n{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--gold);font-weight:600;min-width:16px;padding-top:1px;}
+.ex-hdr{display:grid;grid-template-columns:190px 56px 76px 1fr 120px;font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--text3);font-weight:600;padding:8px 0;border-bottom:.5px solid var(--border2);}
+.ex-hdr>div:first-child{padding-left:16px;}
+.ex-hdr>div:last-child{padding-right:16px;}
+.ex-row{display:grid;grid-template-columns:190px 56px 76px 1fr 120px;align-items:start;border-bottom:.5px solid var(--border);padding:10px 0;}
+.ex-row:last-child{border-bottom:none;}
+.ex-n{font-size:13px;font-weight:600;color:var(--text);line-height:1.3;padding-left:16px;}
+.ex-ss{font-size:10px;color:var(--text3);font-style:italic;margin-top:3px;}
+.ex-s{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text2);padding:0 8px;padding-top:1px;}
+.ex-r{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text2);padding-top:1px;}
+.ex-cue{font-size:11px;color:var(--text3);line-height:1.6;padding:0 12px;}
+.ex-tgt{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text2);padding-right:16px;line-height:1.6;}
+.tgt-arr{color:var(--gold);}
+.wk-post{padding:14px 24px;border-top:.5px solid var(--border);font-size:11px;color:var(--text3);font-style:italic;background:var(--bg3);}
+.wk-post strong{color:var(--gold-l);font-style:normal;}
+.mr{display:flex;align-items:center;gap:16px;padding:10px 0;border-bottom:.5px solid var(--border);}
+.mr:last-child{border-bottom:none;}
+.ml{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--text3);min-width:80px;font-weight:600;}
+.mb{flex:1;background:var(--border2);border-radius:2px;height:4px;}
+.mbar{height:4px;border-radius:2px;}
+.mv{font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:600;min-width:64px;text-align:right;}
+.meal{background:var(--surf);border:.5px solid var(--border);border-radius:10px;padding:18px;}
+.meal-t{font-size:9px;letter-spacing:.2em;text-transform:uppercase;font-style:italic;margin-bottom:6px;}
+.meal-ti{font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px;}
+.meal-d{font-size:11px;color:var(--text3);line-height:1.6;}
+.pw{background:var(--surf);border:.5px solid var(--border);border-radius:10px;padding:18px;text-align:center;}
+.pw-t{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:600;display:block;margin-bottom:6px;}
+.pw-l{font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px;}
+.pw-d{font-size:11px;color:var(--text3);line-height:1.5;}
+.st{width:100%;border-collapse:collapse;}
+.st th{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--text3);font-weight:600;padding:8px 14px;text-align:left;border-bottom:.5px solid var(--border2);}
+.st td{padding:10px 14px;border-bottom:.5px solid var(--border);font-size:12px;vertical-align:top;}
+.st tr:last-child td{border-bottom:none;}
+.sn{font-weight:600;color:var(--text);}
+.sa{font-family:'JetBrains Mono',monospace;color:var(--gold-l);}
+.sti{color:var(--apollo);}
+.sno{color:var(--text3);font-size:11px;line-height:1.5;}
+.tl{position:relative;padding-left:92px;}
+.tl-i{position:relative;padding:0 0 24px 22px;border-left:1px solid var(--border);}
+.tl-i:last-child{padding-bottom:0;}
+.tl-ti{position:absolute;left:-92px;top:2px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;white-space:nowrap;}
+.tl-dot{position:absolute;left:-5px;top:6px;width:9px;height:9px;border-radius:50%;border:1.5px solid;}
+.tl-h{font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px;}
+.tl-d{font-size:12px;color:var(--text3);line-height:1.55;}
+.rc{background:var(--surf);border:.5px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px;}
+.rc-h{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:.5px solid var(--border);}
+.rc-n{font-size:15px;font-weight:600;}
+.rc-f{font-size:11px;color:var(--text3);font-style:italic;}
+.rc-b{padding:16px 20px;}
+.rc-b ul{list-style:none;}
+.rc-b li{font-size:12px;color:var(--text2);padding:5px 0 5px 16px;border-bottom:.5px solid var(--border);position:relative;line-height:1.55;}
+.rc-b li:last-child{border-bottom:none;}
+.rc-b li::before{content:"→";position:absolute;left:0;color:var(--gold);font-size:10px;top:7px;}
+.lc{background:var(--surf);border:.5px solid var(--border);border-radius:12px;padding:20px;}
+.lc-t{font-size:15px;font-weight:600;margin-bottom:14px;padding-bottom:10px;border-bottom:.5px solid var(--border);}
+.lc ul{list-style:none;}
+.lc li{font-size:12px;color:var(--text2);padding:5px 0 5px 16px;border-bottom:.5px solid var(--border);position:relative;line-height:1.55;}
+.lc li:last-child{border-bottom:none;}
+.lc li::before{content:"→";position:absolute;left:0;font-size:10px;top:7px;}
+.foot{text-align:center;padding:48px 24px;font-size:10px;color:var(--text3);letter-spacing:.14em;}
+@media(max-width:900px){
+  .roi-wrap{grid-template-columns:1fr;}
+  .wk-body{grid-template-columns:1fr;}
+  .wk-wu{border-right:none;border-bottom:.5px solid var(--border);}
+  .ex-hdr,.ex-row{grid-template-columns:1fr 56px 76px;}
+  .ex-cue,.ex-tgt{display:none;}
+}
+@media(max-width:640px){
+  .g2,.g3,.g4{grid-template-columns:1fr;}
+  .sec{padding:52px 16px;}
+  .cyc{gap:4px;}
+  .tl{padding-left:68px;}
+  .tl-ti{font-size:9px;left:-68px;}
+  .cover-stats{gap:28px;}
+  .roi-bar-bg{width:60px;}
+}
+@media print{.nav{display:none;}.sec{page-break-inside:avoid;}}
+</style>
+</head>
+<body>
+<nav class="nav"><div class="nav-logo">DORIAN TRIAD</div><a href="#roi">Health ROI</a><a href="#programme">Programme</a><a href="#atlas">Atlas</a><a href="#hades">Hades</a><a href="#apollo">Apollo</a><a href="#nutrition">Nutrition</a><a href="#supps">Supplements</a><a href="#morning">Morning</a><a href="#recovery">Recovery</a><a href="#lifestyle">Lifestyle</a></nav>
+<div class="cover" id="top">
+<div class="cover-eyebrow">Complete Health &amp; Performance Guide</div>
+<div class="cover-title">DORIAN<br><span class="ol">TRIAD</span></div>
+<div class="cover-rule"></div>
+<div class="cover-sub">Training · Nutrition · Recovery · Lifestyle</div>
+<div class="cover-stats">
+  <div><span class="sv">3</span><span class="sl">Training Days</span></div>
+  <div><span class="sv">3200</span><span class="sl">Daily kcal</span></div>
+  <div><span class="sv">175g</span><span class="sl">Daily Protein</span></div>
+  <div><span class="sv">~57</span><span class="sl">Avg Session (min)</span></div>
+  <div><span class="sv">90kg</span><span class="sl">Target Weight</span></div>
+  <div><span class="sv"><14%</span><span class="sl">Target BF</span></div>
+</div></div>
+<section class="sec" id="roi">
+<div class="sec-ey">Priority Framework</div>
+<div class="sec-ti">Health ROI</div>
+<div class="sec-de">Where to invest time and attention for the highest return. These are estimated relative contributions — use them to prioritise effort, not as precise science.</div>
+<div class="insight"><strong>The key insight:</strong> Sleep and nutrition together account for ~60% of your health and performance outcome. If training is optimised but sleep is poor, you are leaving the majority of your potential on the table. Fix the highest items first.</div>
+<div class="roi-wrap">
+  <div><canvas id="rc" width="340" height="340" style="display:block;max-width:100%;"></canvas></div>
+  <div><div class="roi-item">
+  <div class="roi-dot" style="background:#9B6DFF;"></div>
+  <div class="roi-meta"><div class="roi-label">Sleep</div><div class="roi-detail">Foundation of everything — hormones, recovery, neuroplasticity, body composition. Non-negotiable.</div></div>
+  <div class="roi-right"><span class="roi-pct" style="color:#9B6DFF;">33%</span>
+  <div class="roi-bar-bg"><div class="roi-bar" style="width:99px;background:#9B6DFF;"></div></div></div>
+</div><div class="roi-item">
+  <div class="roi-dot" style="background:#00E587;"></div>
+  <div class="roi-meta"><div class="roi-label">Nutrition</div><div class="roi-detail">Fuels adaptation and recovery. You cannot out-train a poor diet. Quality and quantity both matter.</div></div>
+  <div class="roi-right"><span class="roi-pct" style="color:#00E587;">26%</span>
+  <div class="roi-bar-bg"><div class="roi-bar" style="width:78px;background:#00E587;"></div></div></div>
+</div><div class="roi-item">
+  <div class="roi-dot" style="background:#FF5C2B;"></div>
+  <div class="roi-meta"><div class="roi-label">Training</div><div class="roi-detail">The direct stimulus for muscle growth, cardiovascular health and metabolic function.</div></div>
+  <div class="roi-right"><span class="roi-pct" style="color:#FF5C2B;">20%</span>
+  <div class="roi-bar-bg"><div class="roi-bar" style="width:60px;background:#FF5C2B;"></div></div></div>
+</div><div class="roi-item">
+  <div class="roi-dot" style="background:#4DA6FF;"></div>
+  <div class="roi-meta"><div class="roi-label">Stress / Recovery</div><div class="roi-detail">Chronically elevated cortisol suppresses testosterone, disrupts sleep and blunts adaptation.</div></div>
+  <div class="roi-right"><span class="roi-pct" style="color:#4DA6FF;">9%</span>
+  <div class="roi-bar-bg"><div class="roi-bar" style="width:27px;background:#4DA6FF;"></div></div></div>
+</div><div class="roi-item">
+  <div class="roi-dot" style="background:#00C8E8;"></div>
+  <div class="roi-meta"><div class="roi-label">Hydration</div><div class="roi-detail">Even 2% dehydration reduces strength output by 5–8%. Often the silent limiter.</div></div>
+  <div class="roi-right"><span class="roi-pct" style="color:#00C8E8;">4%</span>
+  <div class="roi-bar-bg"><div class="roi-bar" style="width:12px;background:#00C8E8;"></div></div></div>
+</div><div class="roi-item">
+  <div class="roi-dot" style="background:#F0CC70;"></div>
+  <div class="roi-meta"><div class="roi-label">Light / Circadian</div><div class="roi-detail">Morning sunlight sets your cortisol rhythm and governs sleep quality downstream.</div></div>
+  <div class="roi-right"><span class="roi-pct" style="color:#F0CC70;">3%</span>
+  <div class="roi-bar-bg"><div class="roi-bar" style="width:9px;background:#F0CC70;"></div></div></div>
+</div><div class="roi-item">
+  <div class="roi-dot" style="background:#88D040;"></div>
+  <div class="roi-meta"><div class="roi-label">Gut Health</div><div class="roi-detail">Microbiome diversity affects immunity, neurotransmitter production and nutrient absorption.</div></div>
+  <div class="roi-right"><span class="roi-pct" style="color:#88D040;">2%</span>
+  <div class="roi-bar-bg"><div class="roi-bar" style="width:6px;background:#88D040;"></div></div></div>
+</div><div class="roi-item">
+  <div class="roi-dot" style="background:#C9A84C;"></div>
+  <div class="roi-meta"><div class="roi-label">Supplements</div><div class="roi-detail">Marginal gains built on a solid foundation. High ROI only if the above are in order.</div></div>
+  <div class="roi-right"><span class="roi-pct" style="color:#C9A84C;">2%</span>
+  <div class="roi-bar-bg"><div class="roi-bar" style="width:6px;background:#C9A84C;"></div></div></div>
+</div><div class="roi-item">
+  <div class="roi-dot" style="background:#FF8040;"></div>
+  <div class="roi-meta"><div class="roi-label">Heat Exposure</div><div class="roi-detail">Sauna drives cardiovascular adaptation and GH release. Valuable but supporting.</div></div>
+  <div class="roi-right"><span class="roi-pct" style="color:#FF8040;">1%</span>
+  <div class="roi-bar-bg"><div class="roi-bar" style="width:3px;background:#FF8040;"></div></div></div>
+</div></div>
+</div></section>
+<script>(function(){
+  var data=[{l:"Sleep",p:33,c:"#9B6DFF"},{l:"Nutrition",p:26,c:"#00E587"},{l:"Training",p:20,c:"#FF5C2B"},{l:"Stress / Recovery",p:9,c:"#4DA6FF"},{l:"Hydration",p:4,c:"#00C8E8"},{l:"Light / Circadian",p:3,c:"#F0CC70"},{l:"Gut Health",p:2,c:"#88D040"},{l:"Supplements",p:2,c:"#C9A84C"},{l:"Heat Exposure",p:1,c:"#FF8040"}];
+  var c=document.getElementById('rc');if(!c)return;
+  var x=c.getContext('2d'),cx=170,cy=170,ro=148,ri=88,a=-Math.PI/2;
+  data.forEach(function(d){
+    var sw=(d.p/100)*2*Math.PI;
+    x.beginPath();x.moveTo(cx,cy);x.arc(cx,cy,ro,a,a+sw);x.closePath();
+    x.fillStyle=d.c;x.fill();
+    x.strokeStyle='#090909';x.lineWidth=3;x.stroke();a+=sw;
+  });
+  x.beginPath();x.arc(cx,cy,ri,0,2*Math.PI);x.fillStyle='#090909';x.fill();
+  x.fillStyle='#C9A84C';x.font='700 15px Barlow Condensed,sans-serif';x.textAlign='center';
+  x.fillText('HEALTH',cx,cy-5);
+  x.fillStyle='#585856';x.font='12px DM Sans,sans-serif';x.fillText('ROI PRIORITY',cx,cy+14);
+})();</script>
+<section class="sec" id="programme">
+<div class="sec-ey">The Programme</div>
+<div class="sec-ti">Dorian Triad</div>
+<div class="sec-de">Three full-body sessions on a rolling 7–9 day cycle. Not weekly — rotate continuously. Minimum one full rest day between every session. Deadlift on Hades and Incline Barbell on Apollo are the two priority movements of the programme.</div>
+<div class="cyc"><div class="cp" style="background:#001E0D;border-color:#00E58780;"><div class="cp-d">D1</div><div class="cp-n" style="color:#00E587;font-weight:700;">ATLAS</div></div><div class="cp" style="background:#0C0E0C;border-color:#1A1C1A20;"><div class="cp-d">D2</div><div class="cp-n" style="color:#1A1C1A;font-weight:400;">REST</div></div><div class="cp" style="background:#200600;border-color:#FF5C2B80;"><div class="cp-d">D3</div><div class="cp-n" style="color:#FF5C2B;font-weight:700;">HADES</div></div><div class="cp" style="background:#0C0E0C;border-color:#1A1C1A20;"><div class="cp-d">D4</div><div class="cp-n" style="color:#1A1C1A;font-weight:400;">REST</div></div><div class="cp" style="background:#030F1E;border-color:#4DA6FF80;"><div class="cp-d">D5</div><div class="cp-n" style="color:#4DA6FF;font-weight:700;">APOLLO</div></div><div class="cp" style="background:#0C0E0C;border-color:#1A1C1A20;"><div class="cp-d">D6</div><div class="cp-n" style="color:#1A1C1A;font-weight:400;">REST</div></div><div class="cp" style="background:#0C0E0C;border-color:#1A1C1A20;"><div class="cp-d">D7</div><div class="cp-n" style="color:#1A1C1A;font-weight:400;">REST</div></div></div>
+<div class="g3"><div style="background:var(--surf);border:.5px solid #00E58730;border-top:2px solid #00E587;border-radius:12px;padding:20px;"><div style="font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:800;letter-spacing:.05em;color:#00E587;">ATLAS</div><div style="font-size:11px;color:var(--text3);font-style:italic;margin:4px 0;">Strength Foundation</div><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text3);">~58 min</div><div style="font-size:11px;color:var(--text2);margin-top:8px;">7 exercises</div></div><div style="background:var(--surf);border:.5px solid #FF5C2B30;border-top:2px solid #FF5C2B;border-radius:12px;padding:20px;"><div style="font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:800;letter-spacing:.05em;color:#FF5C2B;">HADES</div><div style="font-size:11px;color:var(--text3);font-style:italic;margin:4px 0;">Maximum Load</div><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text3);">~57 min</div><div style="font-size:11px;color:var(--text2);margin-top:8px;">8 exercises</div></div><div style="background:var(--surf);border:.5px solid #4DA6FF30;border-top:2px solid #4DA6FF;border-radius:12px;padding:20px;"><div style="font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:800;letter-spacing:.05em;color:#4DA6FF;">APOLLO</div><div style="font-size:11px;color:var(--text3);font-style:italic;margin:4px 0;">CNS Reset</div><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text3);">~55 min</div><div style="font-size:11px;color:var(--text2);margin-top:8px;">7 exercises</div></div></div></section>
+<section class="sec" id="atlas">
+<div class="sec-ey">Session Cheatsheet</div>
+<div class="sec-ti" style="color:#00E587;">ATLAS</div>
+<div class="sec-de" style="margin-bottom:24px;">Strength Foundation &nbsp;·&nbsp; ~58 min</div>
+<div class="wk-card">
+  <div class="wk-head" style="border-top:3px solid #00E587;">
+    <div class="wk-name" style="color:#00E587;">ATLAS</div>
+    <div class="wk-sub">Strength Foundation &nbsp;·&nbsp; ~58 min</div>
+  </div>
+  <div class="wk-body">
+    <div class="wk-wu">
+      <div class="wu-lbl">Warm-Up Protocol</div>
+      <div class="ws"><span class="ws-n">1</span><span>2 min general movement — arm circles, hip circles, leg swings, bodyweight squats x10</span></div><div class="ws"><span class="ws-n">2</span><span>Goblet squat x10 light — assess hip depth and mobility before loading</span></div><div class="ws"><span class="ws-n">3</span><span>Band pull-aparts x20 — rear delt and scapular activation</span></div><div class="ws"><span class="ws-n">4</span><span>Squat ramp-up: bar x10, 60% of Working Weight x5, 80%*WW x3, then working weight</span></div>
+    </div>
+    <div>
+      <div class="ex-hdr">
+        <div>Exercise</div><div>Sets</div><div>Reps</div>
+        <div style="padding:0 12px;">Technique Cues</div>
+        <div style="padding-right:16px;">Target increments</div>
+      </div>
+      <div class="ex-row">
+  <div class="ex-n">Back Squat<span style="display:inline-block;font-size:9px;font-weight:700;padding:1px 6px;border-radius:3px;letter-spacing:.06em;background:rgba(201,168,76,0.18);color:#E8C870;border:.5px solid rgba(201,168,76,0.5);margin-left:4px;vertical-align:middle;">★</span></div>
+  <div class="ex-s">3</div>
+  <div class="ex-r">×6–8</div>
+  <div class="ex-cue">· Bar on mid-traps, feet shoulder-width with slight outward angle<br>· Big breath, 360° brace before descent — knees track toes throughout<br>· Break parallel, drive through heels, chest up — hips and shoulders rise together</div>
+  <div class="ex-tgt">+3%<br>
+    <span style="color:var(--text3);font-size:9px;">Rest: 3 min</span></div>
+</div><div class="ex-row">
+  <div class="ex-n">Incline DB Press</div>
+  <div class="ex-s">3</div>
+  <div class="ex-r">×6–8</div>
+  <div class="ex-cue">· 30–35° angle only — higher shifts load to front delt, not chest<br>· Elbows at 45° from torso throughout<br>· Feel the stretch at the bottom, slight arc on press, squeeze at top</div>
+  <div class="ex-tgt">27.5kg<span class="tgt-arr"> → </span>32.5kg<br>
+    <span style="color:var(--text3);font-size:9px;">Rest: 2.5 min</span></div>
+</div><div class="ex-row">
+  <div class="ex-n">Pull-Ups</div>
+  <div class="ex-s">3</div>
+  <div class="ex-r">×5–8</div>
+  <div class="ex-cue">· Start from a true dead hang — retract scapulae before pulling<br>· Drive elbows to hips, chest toward the bar<br>· 3-sec controlled descent on every rep — don't drop</div>
+  <div class="ex-tgt">+11.25kg<span class="tgt-arr"> → </span>+17.5kg<br>
+    <span style="color:var(--text3);font-size:9px;">Rest: 2.5 min</span></div>
+</div><div class="ex-row">
+  <div class="ex-n">CS Row<span style="display:inline-block;font-size:9px;font-weight:700;padding:1px 6px;border-radius:3px;letter-spacing:.06em;background:rgba(0,229,135,0.15);color:#00E587;border:.5px solid rgba(0,229,135,0.45);margin-left:4px;vertical-align:middle;">A1</span><div class="ex-ss">Superset immediately into Lateral Raise</div></div>
+  <div class="ex-s">3</div>
+  <div class="ex-r">×12–15</div>
+  <div class="ex-cue">· Chest on pad throughout — no rising off the support<br>· Scapular retraction initiates the pull, not the arm<br>· Pause 1 sec at full contraction, elbows drive back to pockets</div>
+  <div class="ex-tgt">67.5kg<span class="tgt-arr"> → </span>77.5kg<br>
+    <span style="color:var(--text3);font-size:9px;">Rest: → A2</span></div>
+</div><div class="ex-row">
+  <div class="ex-n">Lateral Raise<span style="display:inline-block;font-size:9px;font-weight:700;padding:1px 6px;border-radius:3px;letter-spacing:.06em;background:rgba(0,229,135,0.15);color:#00E587;border:.5px solid rgba(0,229,135,0.45);margin-left:4px;vertical-align:middle;">A2</span><div class="ex-ss">Rest 90 sec after A1+A2</div></div>
+  <div class="ex-s">3</div>
+  <div class="ex-r">×10–20</div>
+  <div class="ex-cue">· Slight forward lean from hips, elbows lead the raise<br>· Raise to just above shoulder height — no higher<br>· Pinky slightly higher than thumb (external rotation)</div>
+  <div class="ex-tgt">8kg<span class="tgt-arr"> → </span>11kg<br>
+    <span style="color:var(--text3);font-size:9px;">Rest: 90 sec</span></div>
+</div><div class="ex-row">
+  <div class="ex-n">Calf Raise<span style="display:inline-block;font-size:9px;font-weight:700;padding:1px 6px;border-radius:3px;letter-spacing:.06em;background:rgba(0,229,135,0.15);color:#00E587;border:.5px solid rgba(0,229,135,0.45);margin-left:4px;vertical-align:middle;">B1</span><div class="ex-ss">Superset immediately into Leg Curl</div></div>
+  <div class="ex-s">2</div>
+  <div class="ex-r">×10–14</div>
+  <div class="ex-cue">· Full stretch at the bottom — 3-sec hold<br>· Drive to full contraction at top, squeeze 1 sec<br>· Single leg — full bodyweight. Control throughout</div>
+  <div class="ex-tgt">BW +8kg<span class="tgt-arr"> → </span>BW +12kg<br>
+    <span style="color:var(--text3);font-size:9px;">Rest: → B2</span></div>
+</div><div class="ex-row">
+  <div class="ex-n">Leg Curl<span style="display:inline-block;font-size:9px;font-weight:700;padding:1px 6px;border-radius:3px;letter-spacing:.06em;background:rgba(0,229,135,0.15);color:#00E587;border:.5px solid rgba(0,229,135,0.45);margin-left:4px;vertical-align:middle;">B2</span><div class="ex-ss">Rest 90 sec after B1+B2</div></div>
+  <div class="ex-s">2</div>
+  <div class="ex-r">×8–12</div>
+  <div class="ex-cue">· Full ROM — don't cut short at either end<br>· Hips stay flat on the pad throughout<br>· Squeeze at peak contraction, 3-sec controlled return</div>
+  <div class="ex-tgt">36kg<span class="tgt-arr"> → </span>44kg<br>
+    <span style="color:var(--text3);font-size:9px;">Rest: 90 sec</span></div>
+</div>
+    </div>
+  </div>
+  <div class="wk-post"><strong>Post-session:</strong> Doorway chest stretch x30 sec, thoracic extension over bench x30 sec, 5-min walk to down-regulate.</div>
+</div></section><section class="sec" id="hades">
+<div class="sec-ey">Session Cheatsheet</div>
+<div class="sec-ti" style="color:#FF5C2B;">HADES</div>
+<div class="sec-de" style="margin-bottom:24px;">Maximum Load &nbsp;·&nbsp; ~57 min</div>
+<div class="wk-card">
+  <div class="wk-head" style="border-top:3px solid #FF5C2B;">
+    <div class="wk-name" style="color:#FF5C2B;">HADES</div>
+    <div class="wk-sub">Maximum Load &nbsp;·&nbsp; ~57 min</div>
+  </div>
+  <div class="wk-body">
+    <div class="wk-wu">
+      <div class="wu-lbl">Warm-Up Protocol</div>
+      <div class="ws"><span class="ws-n">1</span><span>Cat-cow x10, thoracic rotations x10 each side — spine prep</span></div><div class="ws"><span class="ws-n">2</span><span>Glute bridges x15, single-leg hip hinge x8 each — posterior chain activation</span></div><div class="ws"><span class="ws-n">3</span><span>Deadlift ramp-up: bar x10, 60kg x5, 80kg x3, 95kg x2, then working weight</span></div><div class="ws"><span class="ws-n">4</span><span>Stand tall and reset fully between each ramp-up set — pattern before load</span></div>
+    </div>
+    <div>
+      <div class="ex-hdr">
+        <div>Exercise</div><div>Sets</div><div>Reps</div>
+        <div style="padding:0 12px;">Technique Cues</div>
+        <div style="padding-right:16px;">Current → Target</div>
+      </div>
+      <div class="ex-row">
+  <div class="ex-n">Deadlift<span style="display:inline-block;font-size:9px;font-weight:700;padding:1px 6px;border-radius:3px;letter-spacing:.06em;background:rgba(201,168,76,0.18);color:#E8C870;border:.5px solid rgba(201,168,76,0.5);margin-left:4px;vertical-align:middle;">★</span></div>
+  <div class="ex-s">3</div>
+  <div class="ex-r">×5–7</div>
+  <div class="ex-cue">· Bar over mid-foot, hip-width stance — lats engaged (protect your armpits)<br>· Big breath, full 360° brace — push the floor away, don't think about pulling<br>· Bar stays in contact with legs throughout — hips and shoulders rise together</div>
+  <div class="ex-tgt">107.5kg<span class="tgt-arr"> → </span>122.5kg<br>
+    <span style="color:var(--text3);font-size:9px;">Rest: 3 min (hard minimum)</span></div>
+</div><div class="ex-row">
+  <div class="ex-n">Dips<span style="display:inline-block;font-size:9px;font-weight:700;padding:1px 6px;border-radius:3px;letter-spacing:.06em;background:rgba(255,92,43,0.15);color:#FF5C2B;border:.5px solid rgba(255,92,43,0.45);margin-left:4px;vertical-align:middle;">A1</span><div class="ex-ss">Alternate with Chin-ups — full rest between each set</div></div>
+  <div class="ex-s">3</div>
+  <div class="ex-r">×5–8</div>
+  <div class="ex-cue">· Slight forward lean for chest and tricep emphasis<br>· Elbows close to body — controlled descent, feel the stretch<br>· Drive up powerfully but don't fully lockout — maintain tension</div>
+  <div class="ex-tgt">+11.25kg<span class="tgt-arr"> → </span>+17.5kg<br>
+    <span style="color:var(--text3);font-size:9px;">Rest: Full rest, then A2</span></div>
+</div><div class="ex-row">
+  <div class="ex-n">Chin-ups<span style="display:inline-block;font-size:9px;font-weight:700;padding:1px 6px;border-radius:3px;letter-spacing:.06em;background:rgba(255,92,43,0.15);color:#FF5C2B;border:.5px solid rgba(255,92,43,0.45);margin-left:4px;vertical-align:middle;">A2</span><div class="ex-ss">True alternating sets — not a superset. Full rest between each</div></div>
+  <div class="ex-s">3</div>
+  <div class="ex-r">×5–8</div>
+  <div class="ex-cue">· Supinated grip, start from a true dead hang<br>· Drive elbows down and back — chest to bar if possible<br>· 3-sec controlled descent on every rep</div>
+  <div class="ex-tgt">+11.25kg<span class="tgt-arr"> → </span>+17.5kg<br>
+    <span style="color:var(--text3);font-size:9px;">Rest: Full rest, then next A1</span></div>
+</div><div class="ex-row">
+  <div class="ex-n">Machine Shoulder Press</div>
+  <div class="ex-s">2</div>
+  <div class="ex-r">×6–10</div>
+  <div class="ex-cue">· No leg drive — seated, strict press<br>· Full ROM — don't cut the top or bottom short<br>· Controlled descent — resist the weight on the way down</div>
+  <div class="ex-tgt">40.8kg<span class="tgt-arr"> → </span>48kg<br>
+    <span style="color:var(--text3);font-size:9px;">Rest: 2 min</span></div>
+</div><div class="ex-row">
+  <div class="ex-n">Ab Wheel<span style="display:inline-block;font-size:9px;font-weight:700;padding:1px 6px;border-radius:3px;letter-spacing:.06em;background:rgba(255,92,43,0.15);color:#FF5C2B;border:.5px solid rgba(255,92,43,0.45);margin-left:4px;vertical-align:middle;">B1</span><div class="ex-ss">Superset immediately into Leg Extensions</div></div>
+  <div class="ex-s">2–3</div>
+  <div class="ex-r">×6–12</div>
+  <div class="ex-cue">· Brace core completely before rolling — don't initiate with the back<br>· Roll to comfortable extension — lower back must not sag<br>· Pull back using lats and core together</div>
+  <div class="ex-tgt">Kneeling<span class="tgt-arr"> → </span>Standing eccentric<br>
+    <span style="color:var(--text3);font-size:9px;">Rest: → B2</span></div>
+</div><div class="ex-row">
+  <div class="ex-n">Leg Extensions<span style="display:inline-block;font-size:9px;font-weight:700;padding:1px 6px;border-radius:3px;letter-spacing:.06em;background:rgba(255,92,43,0.15);color:#FF5C2B;border:.5px solid rgba(255,92,43,0.45);margin-left:4px;vertical-align:middle;">B2</span><div class="ex-ss">Rest 90 sec after B1+B2</div></div>
+  <div class="ex-s">2</div>
+  <div class="ex-r">×8–12</div>
+  <div class="ex-cue">· 1-sec pause at full lockout — quad peak contraction<br>· 3-sec controlled eccentric on every rep<br>· Feel the quad working through the entire range</div>
+  <div class="ex-tgt">43kg<span class="tgt-arr"> → </span>52kg<br>
+    <span style="color:var(--text3);font-size:9px;">Rest: 90 sec</span></div>
+</div><div class="ex-row">
+  <div class="ex-n">Cable Curl<span style="display:inline-block;font-size:9px;font-weight:700;padding:1px 6px;border-radius:3px;letter-spacing:.06em;background:rgba(255,92,43,0.15);color:#FF5C2B;border:.5px solid rgba(255,92,43,0.45);margin-left:4px;vertical-align:middle;">C1</span><div class="ex-ss">Superset immediately into Tricep Pushdown</div></div>
+  <div class="ex-s">2</div>
+  <div class="ex-r">×8–12</div>
+  <div class="ex-cue">· Upper arm stays completely fixed throughout<br>· Full supination at peak — turn the wrist out<br>· Slow, controlled return — don't swing</div>
+  <div class="ex-tgt">20.3kg<span class="tgt-arr"> → </span>25kg<br>
+    <span style="color:var(--text3);font-size:9px;">Rest: → C2</span></div>
+</div><div class="ex-row">
+  <div class="ex-n">Tricep Pushdown<span style="display:inline-block;font-size:9px;font-weight:700;padding:1px 6px;border-radius:3px;letter-spacing:.06em;background:rgba(255,92,43,0.15);color:#FF5C2B;border:.5px solid rgba(255,92,43,0.45);margin-left:4px;vertical-align:middle;">C2</span><div class="ex-ss">Rest 90 sec after C1+C2</div></div>
+  <div class="ex-s">2</div>
+  <div class="ex-r">×8–12</div>
+  <div class="ex-cue">· Elbows pinned to sides — no movement at the elbow joint<br>· Full extension at bottom — feel the tricep contract<br>· No body swing or lean</div>
+  <div class="ex-tgt">13.5kg<span class="tgt-arr"> → </span>18kg<br>
+    <span style="color:var(--text3);font-size:9px;">Rest: 90 sec</span></div>
+</div>
+    </div>
+  </div>
+  <div class="wk-post"><strong>Post-session:</strong> Hip flexor stretch x30 sec each, pigeon pose x30 sec each side, 5-min walk. Deadlift taxes the CNS — don't rush out.</div>
+</div></section><section class="sec" id="apollo">
+<div class="sec-ey">Session Cheatsheet</div>
+<div class="sec-ti" style="color:#4DA6FF;">APOLLO</div>
+<div class="sec-de" style="margin-bottom:24px;">CNS Reset &nbsp;·&nbsp; ~55 min</div>
+<div class="wk-card">
+  <div class="wk-head" style="border-top:3px solid #4DA6FF;">
+    <div class="wk-name" style="color:#4DA6FF;">APOLLO</div>
+    <div class="wk-sub">CNS Reset &nbsp;·&nbsp; ~55 min</div>
+  </div>
+  <div class="wk-body">
+    <div class="wk-wu">
+      <div class="wu-lbl">Warm-Up Protocol</div>
+      <div class="ws"><span class="ws-n">1</span><span>2 min general movement — arm circles, shoulder rolls, thoracic rotations</span></div><div class="ws"><span class="ws-n">2</span><span>Band pull-aparts x20, light face pull x15 — rear delt and rotator cuff activation</span></div><div class="ws"><span class="ws-n">3</span><span>Push-ups x15–20 controlled — feel the chest stretch at the bottom of each rep</span></div><div class="ws"><span class="ws-n">4</span><span>Incline barbell ramp-up: bar x10, 30kg x6, 40kg x4, then working weight</span></div>
+    </div>
+    <div>
+      <div class="ex-hdr">
+        <div>Exercise</div><div>Sets</div><div>Reps</div>
+        <div style="padding:0 12px;">Technique Cues</div>
+        <div style="padding-right:16px;">Current → Target</div>
+      </div>
+      <div class="ex-row">
+  <div class="ex-n">Incline Barbell<span style="display:inline-block;font-size:9px;font-weight:700;padding:1px 6px;border-radius:3px;letter-spacing:.06em;background:rgba(201,168,76,0.18);color:#E8C870;border:.5px solid rgba(201,168,76,0.5);margin-left:4px;vertical-align:middle;">★</span></div>
+  <div class="ex-s">3</div>
+  <div class="ex-r">×6–10</div>
+  <div class="ex-cue">· 30° angle only — set shoulder blades back and DOWN before unracking<br>· Lower to upper chest, 1-sec pause at the bottom — feel the stretch<br>· Press in a slight arc, squeeze the chest together at the top — this is the priority movement</div>
+  <div class="ex-tgt">50kg<span class="tgt-arr"> → </span>65kg<br>
+    <span style="color:var(--text3);font-size:9px;">Rest: 3 min</span></div>
+</div><div class="ex-row">
+  <div class="ex-n">Machine Press</div>
+  <div class="ex-s">3</div>
+  <div class="ex-r">×8–12</div>
+  <div class="ex-cue">· Seat height so handles are at upper chest level<br>· No full lockout — continuous tension on the pec throughout<br>· 2-sec controlled descent, feel the chest stretch at end range</div>
+  <div class="ex-tgt">23kg<span class="tgt-arr"> → </span>30kg<br>
+    <span style="color:var(--text3);font-size:9px;">Rest: 90 sec</span></div>
+</div><div class="ex-row">
+  <div class="ex-n">Cable Fly<span style="display:inline-block;font-size:9px;font-weight:700;padding:1px 6px;border-radius:3px;letter-spacing:.06em;background:rgba(77,166,255,0.15);color:#4DA6FF;border:.5px solid rgba(77,166,255,0.45);margin-left:4px;vertical-align:middle;">A1</span><div class="ex-ss">Superset immediately into Face Pull</div></div>
+  <div class="ex-s">2–3</div>
+  <div class="ex-r">×12–15</div>
+  <div class="ex-cue">· Cables at or above shoulder height — step forward to maintain tension<br>· Hug a tree arc — elbows stay fixed, NOT a press movement<br>· 1-sec squeeze at peak, 3-sec return — the eccentric stretch is the stimulus</div>
+  <div class="ex-tgt">Fly machine<span class="tgt-arr"> → </span>+1 increment/session<br>
+    <span style="color:var(--text3);font-size:9px;">Rest: → A2</span></div>
+</div><div class="ex-row">
+  <div class="ex-n">Face Pull<span style="display:inline-block;font-size:9px;font-weight:700;padding:1px 6px;border-radius:3px;letter-spacing:.06em;background:rgba(77,166,255,0.15);color:#4DA6FF;border:.5px solid rgba(77,166,255,0.45);margin-left:4px;vertical-align:middle;">A2</span><div class="ex-ss">Rest 2 min after A1+A2</div></div>
+  <div class="ex-s">2–3</div>
+  <div class="ex-r">×15–20</div>
+  <div class="ex-cue">· Rope at face height — pull the rope apart as you pull toward your face<br>· Elbows high and wide at full contraction — external rotation is the point<br>· Protects your shoulder for all the pressing. Don't rush or skip it</div>
+  <div class="ex-tgt">9kg<span class="tgt-arr"> → </span>12kg<br>
+    <span style="color:var(--text3);font-size:9px;">Rest: 2 min</span></div>
+</div><div class="ex-row">
+  <div class="ex-n">Bulgarian Split Squat</div>
+  <div class="ex-s">2</div>
+  <div class="ex-r">×7–9</div>
+  <div class="ex-cue">· Front foot forward enough for a near-vertical shin<br>· Descend straight down — not a lunge forward<br>· All reps one leg before switching — drive through the front heel</div>
+  <div class="ex-tgt">22.5kg<span class="tgt-arr"> → </span>28kg<br>
+    <span style="color:var(--text3);font-size:9px;">Rest: 2 min</span></div>
+</div><div class="ex-row">
+  <div class="ex-n">Forearms<span style="display:inline-block;font-size:9px;font-weight:700;padding:1px 6px;border-radius:3px;letter-spacing:.06em;background:rgba(77,166,255,0.15);color:#4DA6FF;border:.5px solid rgba(77,166,255,0.45);margin-left:4px;vertical-align:middle;">B1</span><div class="ex-ss">Superset into Neck Training</div></div>
+  <div class="ex-s">2</div>
+  <div class="ex-r">×8–12</div>
+  <div class="ex-cue">· Forearm rests on thigh — only the wrist moves<br>· Supinated wrist curl first, then pronated reverse curl<br>· Full range of motion — don't cut short at either end</div>
+  <div class="ex-tgt">10kg / 7.5kg<span class="tgt-arr"> → </span>12.5kg / 10kg<br>
+    <span style="color:var(--text3);font-size:9px;">Rest: → B2</span></div>
+</div><div class="ex-row">
+  <div class="ex-n">Neck Training<span style="display:inline-block;font-size:9px;font-weight:700;padding:1px 6px;border-radius:3px;letter-spacing:.06em;background:rgba(77,166,255,0.15);color:#4DA6FF;border:.5px solid rgba(77,166,255,0.45);margin-left:4px;vertical-align:middle;">B2</span><div class="ex-ss">Rest 90 sec after B1+B2</div></div>
+  <div class="ex-s">2</div>
+  <div class="ex-r">×12–20</div>
+  <div class="ex-cue">· Cable head attachment — flexion (forward) then extension (backward)<br>· Controlled throughout — NO momentum, no jerking<br>· Start conservative and build over months. Cervical adaptation is slow</div>
+  <div class="ex-tgt">5kg<span class="tgt-arr"> → </span>10kg (weeks)<br>
+    <span style="color:var(--text3);font-size:9px;">Rest: 90 sec</span></div>
+</div>
+    </div>
+  </div>
+  <div class="wk-post"><strong>Post-session:</strong> Doorway chest stretch x30 sec, cross-arm shoulder stretch x30 sec each side, 5-min walk.</div>
+</div></section>
+<section class="sec" id="nutrition">
+<div class="sec-ey">Fuelling Protocol</div>
+<div class="sec-ti">Daily Nutrition</div>
+<div class="sec-de">Priority 1: hit 175g protein. Priority 2: maximise calories to 3200 kcal. The most important variable is intake on low-appetite days — not optimising the good days, but protecting the average.</div>
+<div class="g2" style="margin-bottom:40px;">
+  <div class="card">
+    <div style="font-size:9.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);font-weight:600;margin-bottom:16px;">Daily Macro Targets</div>
+    <div class="mr"><div class="ml">KCAL</div><div class="mb"><div class="mbar" style="width:100%;background:#E8C870;box-shadow:0 0 6px #E8C87060;"></div></div><div class="mv" style="color:#E8C870;">3200</div></div><div class="mr"><div class="ml">PROTEIN</div><div class="mb"><div class="mbar" style="width:78%;background:#00E587;box-shadow:0 0 6px #00E58760;"></div></div><div class="mv" style="color:#00E587;">175g</div></div><div class="mr"><div class="ml">CARBS</div><div class="mb"><div class="mbar" style="width:64%;background:#4DA6FF;box-shadow:0 0 6px #4DA6FF60;"></div></div><div class="mv" style="color:#4DA6FF;">360g</div></div><div class="mr"><div class="ml">FAT</div><div class="mb"><div class="mbar" style="width:44%;background:#FF5C2B;box-shadow:0 0 6px #FF5C2B60;"></div></div><div class="mv" style="color:#FF5C2B;">100g</div></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px;padding-top:16px;border-top:.5px solid var(--border);">
+      <div style="text-align:center;padding:8px;background:rgba(0,229,135,.07);border:.5px solid rgba(0,229,135,.25);border-radius:6px;font-size:11px;font-weight:600;color:#00E587;">1 · Protein first</div>
+      <div style="text-align:center;padding:8px;background:rgba(232,200,112,.07);border:.5px solid rgba(232,200,112,.25);border-radius:6px;font-size:11px;font-weight:600;color:#E8C870;">2 · Maximise calories</div>
+    </div>
+  </div>
+  <div class="card">
+    <div style="font-size:9.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);font-weight:600;margin-bottom:16px;">Pre-Workout Protocol</div>
+    <div class="g4"><div class="pw" style="border-color:#00E58730;"><span class="pw-t" style="color:#00E587;">–90 min</span><div class="pw-l">Complex meal</div><div class="pw-d">Pasta, rice, meat — sustained glycogen for the session</div></div><div class="pw" style="border-color:#E8C87030;"><span class="pw-t" style="color:#E8C870;">–20 min</span><div class="pw-l">2–3 dates</div><div class="pw-d">Fast glucose spike — hits blood at warm-up onset</div></div><div class="pw" style="border-color:#FF5C2B30;"><span class="pw-t" style="color:#FF5C2B;">–20 min</span><div class="pw-l">Black coffee</div><div class="pw-d">CNS stimulation and focus — double espresso</div></div><div class="pw" style="border-color:#4DA6FF30;"><span class="pw-t" style="color:#4DA6FF;">During</span><div class="pw-l">Electrolytes</div><div class="pw-d">THE Electro in water — 650mg sodium per serve</div></div></div>
+  </div>
+</div>
+<div style="font-size:9.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);font-weight:600;margin-bottom:16px;">Daily Meal Structure</div>
+<div class="g3" style="margin-bottom:40px;"><div class="meal"><div class="meal-t" style="color:#00E587;">07:45</div><div class="meal-ti">Breakfast</div><div style="font-size:11px;color:var(--text3);font-style:italic;margin-bottom:5px;">Porridge bowl or eggs / bacon / avocado</div><div class="meal-d">Option A: whole milk porridge, muesli, yogurt, peanut butter, honey — ~35–40g protein, ~700 kcal. Option B: eggs, bacon, avocado, butter, bread — ~45–50g protein, ~850 kcal. Bigger option on training days.</div></div><div class="meal"><div class="meal-t" style="color:#C9A84C;">10:30</div><div class="meal-ti">Mid-morning snack</div><div style="font-size:11px;color:var(--text3);font-style:italic;margin-bottom:5px;">Figs, nuts, banana, yogurt</div><div class="meal-d">Deliberate calorie insertion — not a full meal. Add 2 boiled eggs or sardines to meaningfully improve protein distribution across the day.</div></div><div class="meal"><div class="meal-t" style="color:#4DA6FF;">13:00</div><div class="meal-ti">Lunch</div><div style="font-size:11px;color:var(--text3);font-style:italic;margin-bottom:5px;">Previous night's dinner</div><div class="meal-d">Large portion of the evening meal. Guaranteed quality, zero decision fatigue. The advantage of cooking once and eating twice.</div></div><div class="meal"><div class="meal-t" style="color:#FF5C2B;">19:00</div><div class="meal-ti">Dinner</div><div style="font-size:11px;color:var(--text3);font-style:italic;margin-bottom:5px;">Weighed meat + carb + veg</div><div class="meal-d">Chicken/rice/broccoli, beef/pasta or similar. Protein weighed. Generous Kerrygold and olive oil. Glass of whole milk. Most controlled meal of the day.</div></div><div class="meal"><div class="meal-t" style="color:#9B6DFF;">22:00</div><div class="meal-ti">Pre-bed meal</div><div style="font-size:11px;color:var(--text3);font-style:italic;margin-bottom:5px;">Cereal + 250g yogurt + peanut butter</div><div class="meal-d">Casein-rich yogurt supports overnight muscle protein synthesis — well-evidenced for hard gainers. Don't skip this on late nights.</div></div><div class="meal"><div class="meal-t" style="color:#9A9890;">Variable</div><div class="meal-ti">Protein shake</div><div style="font-size:11px;color:var(--text3);font-style:italic;margin-bottom:5px;">Whey — daily, non-negotiable</div><div class="meal-d">Anchored to post-training or a fixed daily time. Insurance against falling short of 175g. Fills the gap rather than replacing food.</div></div></div>
+<div style="font-size:9.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);font-weight:600;margin-bottom:16px;">Food Quality Guide</div>
+<div class="g4"><div class="card-sm" style="border-color:#00E58730;"><div style="font-size:12px;font-weight:600;color:#00E587;margin-bottom:4px;">Protein sources</div><div style="font-size:11px;color:var(--text3);line-height:1.5;">Chicken, beef, eggs, dairy, fish. Weigh at dinner. Target 40–50g per main meal.</div></div><div class="card-sm" style="border-color:#4DA6FF30;"><div style="font-size:12px;font-weight:600;color:#4DA6FF;margin-bottom:4px;">Complex carbs</div><div style="font-size:11px;color:var(--text3);line-height:1.5;">Oats, rice, pasta, potatoes, whole grains. Primary fuel — don't fear them.</div></div><div class="card-sm" style="border-color:#E8C87030;"><div style="font-size:12px;font-weight:600;color:#E8C870;margin-bottom:4px;">Healthy fats</div><div style="font-size:11px;color:var(--text3);line-height:1.5;">Kerrygold, extra virgin olive oil, avocado, nuts. Dense calories — use liberally.</div></div><div class="card-sm" style="border-color:#88D04030;"><div style="font-size:12px;font-weight:600;color:#88D040;margin-bottom:4px;">Vegetables</div><div style="font-size:11px;color:var(--text3);line-height:1.5;">Broccoli, peppers, tomatoes, leafy greens. Variety over quantity. Daily minimum.</div></div><div class="card-sm" style="border-color:#F0A03030;"><div style="font-size:12px;font-weight:600;color:#F0A030;margin-bottom:4px;">Fruit</div><div style="font-size:11px;color:var(--text3);line-height:1.5;">Broad variety. Fibre, micronutrients, natural sugars. Figs, banana, fresh seasonal.</div></div><div class="card-sm" style="border-color:#C9A84C30;"><div style="font-size:12px;font-weight:600;color:#C9A84C;margin-bottom:4px;">Dairy</div><div style="font-size:11px;color:var(--text3);line-height:1.5;">Full-fat — whole milk, Greek yogurt, quality cheese. Calcium, protein, saturated fat.</div></div><div class="card-sm" style="border-color:#9B6DFF30;"><div style="font-size:12px;font-weight:600;color:#9B6DFF;margin-bottom:4px;">Whole foods</div><div style="font-size:11px;color:var(--text3);line-height:1.5;">Always prioritise food that existed before industrial processing.</div></div><div class="card-sm" style="border-color:#FF5C2B30;"><div style="font-size:12px;font-weight:600;color:#FF5C2B;margin-bottom:4px;">Minimise</div><div style="font-size:11px;color:var(--text3);line-height:1.5;">Refined sugar, ultra-processed food, seed oils, artificial sweeteners.</div></div></div></section>
+<section class="sec" id="supps">
+<div class="sec-ey">Daily Stack</div>
+<div class="sec-ti">Supplements</div>
+<div class="sec-de">All eight products well-chosen. Two items need attention: magnesium form (switch oxide → glycinate) and omega-3 dose (3 capsules, not 1). Supplements occupy ~2% of the health ROI — don't let optimising them distract from the higher-impact items above.</div>
+<div class="card"><table class="st"><thead><tr><th>Supplement</th><th>Amount</th><th>Timing</th><th>Notes</th></tr></thead>
+<tbody><tr><td><span class="sn">Creatine Monohydrate</span><span style="font-size:9px;padding:1px 5px;border-radius:3px;background:rgba(0,229,135,0.12);color:#00E587;border:.5px solid rgba(0,229,135,0.3);margin-left:6px;font-weight:600;">✓ SOLID</span></td><td class="sa">5g</td><td class="sti">Anytime daily</td><td class="sno">Same time every day — saturation depends on consistency, not timing</td></tr><tr><td><span class="sn">Whey Protein</span></td><td class="sa">As needed</td><td class="sti">Post-training / any meal</td><td class="sno">Only when food falls short of 175g protein target</td></tr><tr><td><span class="sn">Collagen</span></td><td class="sa">10–15g</td><td class="sti">30–60 min pre-training</td><td class="sno">Take with vitamin C source for connective tissue synthesis benefit</td></tr><tr><td><span class="sn">Multivitamin A-Z</span></td><td class="sa">Per label</td><td class="sti">Breakfast — 08:15</td><td class="sno">With food for fat-soluble absorption. Check D3 content vs standalone dose</td></tr><tr><td><span class="sn">Omega-3 (Essential)</span><span style="font-size:9px;padding:1px 5px;border-radius:3px;background:rgba(255,92,43,0.12);color:#FF5C2B;border:.5px solid rgba(255,92,43,0.3);margin-left:6px;font-weight:600;">REVIEW</span></td><td class="sa">3 capsules</td><td class="sti">With fattiest meal</td><td class="sno">Each capsule = 600mg EPA/DHA. 1 capsule is insufficient — take 3</td></tr><tr><td><span class="sn">Vitamin D3</span><span style="font-size:9px;padding:1px 5px;border-radius:3px;background:rgba(0,229,135,0.12);color:#00E587;border:.5px solid rgba(0,229,135,0.3);margin-left:6px;font-weight:600;">✓ SOLID</span></td><td class="sa">2500 IU</td><td class="sti">With fattiest meal</td><td class="sno">Good dose. Account for D3 in multivitamin — don't double count</td></tr><tr><td><span class="sn">Magnesium</span><span style="font-size:9px;padding:1px 5px;border-radius:3px;background:rgba(255,92,43,0.12);color:#FF5C2B;border:.5px solid rgba(255,92,43,0.3);margin-left:6px;font-weight:600;">REVIEW</span></td><td class="sa">300–400mg</td><td class="sti">30–60 min before bed</td><td class="sno">Switch from oxide to glycinate form — significantly better absorbed</td></tr><tr><td><span class="sn">Electrolytes (THE Electro)</span><span style="font-size:9px;padding:1px 5px;border-radius:3px;background:rgba(0,229,135,0.12);color:#00E587;border:.5px solid rgba(0,229,135,0.3);margin-left:6px;font-weight:600;">✓ SOLID</span></td><td class="sa">1 serving</td><td class="sti">During training / hot days</td><td class="sno">650mg sodium per serve. Don't limit to training only in Tenerife heat</td></tr></tbody></table></div></section>
+<section class="sec" id="morning">
+<div class="sec-ey">Daily Protocol</div>
+<div class="sec-ti">Morning Routine</div>
+<div class="sec-de">Already better than most. The three highest-leverage changes: eliminate the snooze cycle, move electrolytes to the moment of waking, reduce matcha to half to one teaspoon to avoid excess caffeine stacking.</div>
+<div class="insight"><strong>Core principle:</strong> Delay first caffeine 60–90 minutes after waking. Cortisol peaks naturally at 30–45 min — let it work first, then layer caffeine on top. Already half-achieved by taking your espresso after 09:00.</div>
+<div class="tl"><div class="tl-i"><div class="tl-ti" style="color:#C9A84C;">07:00</div><div class="tl-dot" style="background:#C9A84C;border-color:#C9A84C40;"></div><div class="tl-h">Wake — no snooze</div><div class="tl-d">Alarm across the room. Snooze cycles cause fragmented sleep that deepens grogginess. Two 9-minute snoozes = 18 minutes of sleep inertia amplification, not recovery.</div></div><div class="tl-i"><div class="tl-ti" style="color:#00C8E8;">07:00</div><div class="tl-dot" style="background:#00C8E8;border-color:#00C8E840;"></div><div class="tl-h">500ml water + electrolytes</div><div class="tl-d">Immediately on waking. Overnight dehydration is a primary driver of morning grogginess. Rehydrating before anything else accelerates adenosine clearance.</div></div><div class="tl-i"><div class="tl-ti" style="color:#00E587;">07:05</div><div class="tl-dot" style="background:#00E587;border-color:#00E58740;"></div><div class="tl-h">Open son's blinds</div><div class="tl-d">Natural light begins your circadian reset. On the school run — no sunglasses. 10 minutes of direct Tenerife morning sun is more powerful than most interventions.</div></div><div class="tl-i"><div class="tl-ti" style="color:#F0CC70;">07:45</div><div class="tl-dot" style="background:#F0CC70;border-color:#F0CC7040;"></div><div class="tl-h">Breakfast + matcha</div><div class="tl-d">Porridge bowl or eggs/bacon/avocado — target 40–50g protein. Reduce matcha to half to one tsp. Current one-tbsp dose = up to 280mg caffeine before your espresso.</div></div><div class="tl-i"><div class="tl-ti" style="color:#9A9890;">08:15</div><div class="tl-dot" style="background:#9A9890;border-color:#9A989040;"></div><div class="tl-h">Supplements</div><div class="tl-d">Multivitamin, Omega-3 (3 capsules), Vitamin D3 — with food. Magnesium moves to bedtime, not morning.</div></div><div class="tl-i"><div class="tl-ti" style="color:#00E587;">08:30</div><div class="tl-dot" style="background:#00E587;border-color:#00E58740;"></div><div class="tl-h">School run by bike</div><div class="tl-d">10+ minutes direct morning sun — no sunglasses. Photoreceptors in the eyes are the primary circadian driver. This is your most powerful sleep-quality investment.</div></div><div class="tl-i"><div class="tl-ti" style="color:#FF5C2B;">09:00+</div><div class="tl-dot" style="background:#FF5C2B;border-color:#FF5C2B40;"></div><div class="tl-h">First double espresso</div><div class="tl-d">Delayed ~90 minutes post-wake. Cortisol peaks naturally at 30–45 min — let it work before adding caffeine. This is already half-correct in your current routine.</div></div><div class="tl-i"><div class="tl-ti" style="color:#9A9890;">12:00</div><div class="tl-dot" style="background:#9A9890;border-color:#9A989040;"></div><div class="tl-h">Second double espresso</div><div class="tl-d">Last caffeine of the day. 6-hour half-life means ~60mg still circulating at midnight — suppressing deep sleep without preventing sleep onset.</div></div><div class="tl-i"><div class="tl-ti" style="color:#4DA6FF;">22:30</div><div class="tl-dot" style="background:#4DA6FF;border-color:#4DA6FF40;"></div><div class="tl-h">Magnesium glycinate</div><div class="tl-d">300–400mg, 30–60 minutes before sleep. Switch from oxide to glycinate. Sleep quality improvement compounds over weeks of consistent use.</div></div></div></section>
+<section class="sec" id="recovery">
+<div class="sec-ey">Recovery Protocol</div>
+<div class="sec-ti">Rest &amp; Recovery</div>
+<div class="sec-de">Adaptation happens during recovery, not during training. The session is the stimulus — everything here is the response. Protecting recovery is as important as the training quality itself.</div>
+<div class="rc"><div class="rc-h" style="border-left:3px solid #FF8040;"><div class="rc-n" style="color:#FF8040;">Sauna / Hot Bath</div><div class="rc-f">2–3× per week on rest days only</div></div><div class="rc-b"><ul><li>Do NOT use within 2 hours of training — blunts the acute inflammatory signal that drives adaptation</li><li>On rest days or the evening of training days, heat is beneficial — vasodilation, GH release, parasympathetic shift</li><li>Evidence for cardiovascular adaptation and longevity markers from regular sauna is robust</li><li>Mental reset value on rest days is real and hard to quantify — leverage it</li></ul></div></div><div class="rc"><div class="rc-h" style="border-left:3px solid #9B6DFF;"><div class="rc-n" style="color:#9B6DFF;">Sleep</div><div class="rc-f">7–9 hours. The highest ROI item in the entire guide</div></div><div class="rc-b"><ul><li>The two nights after Hades are disproportionately important — deadlift sessions create the most CNS demand</li><li>Consistent 07:00 wake time regardless of when you sleep — the wake anchor sets the circadian clock</li><li>Dark, cool room. Magnesium glycinate 30–60 min before bed consistently</li><li>Don't train on fewer than 6 hours sleep if avoidable — anabolic signalling is meaningfully blunted</li></ul></div></div><div class="rc"><div class="rc-h" style="border-left:3px solid #4DA6FF;"><div class="rc-n" style="color:#4DA6FF;">Breathing / Down-regulation</div><div class="rc-f">Post-session and as needed</div></div><div class="rc-b"><ul><li>Box breathing (4 sec in / 4 hold / 4 out / 4 hold) for 5 minutes post-heavy session shifts sympathetic to parasympathetic</li><li>Physiological sigh (double inhale through nose, long exhale through mouth) is the fastest known acute stress reducer</li><li>Nasal breathing during walking and low-intensity movement improves CO2 tolerance and sleep quality over time</li><li>5-minute walk post-session is not optional — it actively assists recovery and down-regulation</li></ul></div></div><div class="rc"><div class="rc-h" style="border-left:3px solid #00C8E8;"><div class="rc-n" style="color:#00C8E8;">Hydration</div><div class="rc-f">2.5–3L daily minimum. More on training days and hot days</div></div><div class="rc-b"><ul><li>500ml with electrolytes immediately on waking — before coffee, before food</li><li>Electrolytes during training and on hot Tenerife days — 650mg sodium per serve is well-dosed</li><li>Pale yellow urine is the target — reliable real-time indicator</li><li>Thirst signal lags actual dehydration by a meaningful margin — don't rely on it alone</li></ul></div></div><div class="rc"><div class="rc-h" style="border-left:3px solid #88D040;"><div class="rc-n" style="color:#88D040;">Cold Exposure</div><div class="rc-f">Not recommended post-training</div></div><div class="rc-b"><ul><li>Cold immersion immediately post-training significantly blunts hypertrophic adaptation — stronger evidence than heat</li><li>If you use cold exposure, minimum 4 hours after training, or on rest days only</li><li>No strong rationale for cold exposure given current goals, warm climate and no endurance sport component</li><li>Contrast therapy (hot then cold) on rest days is acceptable if desired for general recovery feel</li></ul></div></div><div class="rc"><div class="rc-h" style="border-left:3px solid #F0CC70;"><div class="rc-n" style="color:#F0CC70;">Active Recovery</div><div class="rc-f">Rest days are not sedentary days</div></div><div class="rc-b"><ul><li>Walking, light cycling, swimming — low intensity movement maintains blood flow without adding stress</li><li>Tenerife offers excellent outdoor activity — leverage the climate and terrain on rest days</li><li>Full ROM joint movement (arm circles, hip circles, light stretching) maintains mobility without adding soreness</li><li>Progressive overload is only productive because of recovery periods — protect them as seriously as training days</li></ul></div></div></section>
+<section class="sec" id="lifestyle">
+<div class="sec-ey">Long Game</div>
+<div class="sec-ti">Lifestyle Factors</div>
+<div class="sec-de">Supporting contributors that compound powerfully over years. Lower individual ROI weight than sleep or training, but largely free to implement and sustainable indefinitely.</div>
+<div class="g2"><div class="lc"><div class="lc-t" style="color:#88D040;">Gut Health</div><ul><li>Target 30+ different plant foods per week — diversity is the primary microbiome health metric</li><li>Daily fermented foods: Greek yogurt, kefir if available — live cultures matter for microbial diversity</li><li>Fibre minimum 30g daily — oats, legumes, vegetables, fruit, whole grains</li><li>Minimise ultra-processed food, refined sugar and artificial sweeteners — all documented microbiome disruptors</li></ul></div><div class="lc"><div class="lc-t" style="color:#4DA6FF;">Flexibility & ROM</div><ul><li>Full ROM on every exercise in the programme is more valuable than dedicated stretching sessions — this is where the flexibility work happens</li><li>Post-session stretching (chest, hip flexors, hamstrings) compounds significantly over months for just 5 minutes per day</li><li>Thoracic mobility is the most limiting factor for most pressing athletes — extensions over a bench or foam roller daily</li><li>Deep squat and full hip hinge patterns with true ROM prevent restriction that accumulates from training without mobility work</li></ul></div><div class="lc"><div class="lc-t" style="color:#F0CC70;">Sunlight & Vitamin D</div><ul><li>Morning sunlight without sunglasses within 60 minutes of waking — the most powerful free circadian intervention</li><li>Despite living in Tenerife, supplement 2500 IU D3 daily — years in Ireland likely created a deficiency not yet corrected</li><li>Mid-day Tenerife sun is intense — high SPF at peak hours is sensible. Low-angle morning sun has lower UV risk</li><li>D3 plays documented roles in testosterone production, muscle function, immune regulation and mood stabilisation</li></ul></div><div class="lc"><div class="lc-t" style="color:#FF5C2B;">Caffeine Strategy</div><ul><li>Total daily: half-1 tsp matcha + 2 double espressos = 190–320mg — within range but upper end</li><li>Delay first caffeine 60–90 min after waking — let natural cortisol peak work first</li><li>Last caffeine by 12:00 noon — 6-hour half-life means meaningful residual at midnight</li><li>Periodic caffeine breaks (5–7 days every 6–8 weeks) restore full sensitivity — tolerance builds within a week</li></ul></div><div class="lc"><div class="lc-t" style="color:#9B6DFF;">Stress & Mental Health</div><ul><li>Chronic stress elevates cortisol which directly suppresses testosterone and growth hormone — the hormones you need</li><li>The consistency built this year is itself a stress-management tool — routine creates psychological stability</li><li>Training from identity and enjoyment is more durable than training from feeling too skinny — both work, one compounds better over 20 years</li><li>Sleep, training, good food and morning sunlight are evidence-based mood regulators — the lifestyle IS the mental health protocol</li></ul></div><div class="lc"><div class="lc-t" style="color:#00C8E8;">Cardiovascular Health</div><ul><li>Your training already provides significant cardiovascular stimulus through compound movements and density of work</li><li>Walking daily — particularly in Tenerife terrain — provides Zone 2 cardiovascular work that compounds over time</li><li>Nasal breathing during low-intensity activity is the simplest cardiovascular health habit available</li><li>Sauna 2–3x weekly adds meaningful cardiovascular adaptation independent of exercise — VO2max and heart rate variability both improve</li></ul></div></div>
+<div style="margin-top:40px;" class="insight"><strong>The integrated picture:</strong> Training is intelligent, diet is solid, supplements are well-chosen, lifestyle is well-structured. You are more consistent than you have ever been and heavier than you have ever been while staying lean. The one variable with the greatest remaining upside is sleep quality — specifically the depth of sleep in the 48 hours following Hades. Protect those nights above all others.</div>
+</section>
+<footer class="foot"><span style="color:#C9A84C;letter-spacing:.2em;">DORIAN TRIAD</span> &nbsp;·&nbsp; Complete Health &amp; Performance Guide &nbsp;·&nbsp; Training · Nutrition · Recovery · Lifestyle</footer>
+</body>
+</html>
