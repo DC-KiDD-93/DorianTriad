@@ -545,7 +545,6 @@ svg { display: block; }
   background: var(--surf);
   border: .5px solid var(--border);
   border-radius: var(--r-lg);
-  overflow: hidden;
   position: relative;
   transition: opacity .2s;
 }
@@ -632,71 +631,94 @@ svg { display: block; }
   top: -1px;
 }
 
-/* Controls */
-.ex-controls {
+/* Controls — weight input + rest + done */
+.ex-input-section {
+  padding: 12px 14px 12px 16px;
+  border-top: .5px solid var(--border);
+}
+.ex-prev-row {
+  font-size: 11px;
+  color: var(--text3);
+  margin-bottom: 10px;
+  padding-left: 2px;
+}
+.ex-input-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ex-weight-wrap {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 13px 11px 16px;
-  border-top: .5px solid var(--border);
-  flex-wrap: wrap;
-}
-.ex-weight-group {
-  display: flex;
-  align-items: center;
-  gap: 7px;
   flex: 1;
-  min-width: 140px;
 }
-.ex-prev { font-size: 10px; color: var(--text3); white-space: nowrap; min-width: 60px; }
 .ex-weight-input {
-  width: 72px;
-  padding: 8px 6px;
+  width: 100px;
+  padding: 10px 8px;
   background: var(--bg);
-  border: 1px solid var(--border2);
+  border: 2px solid var(--border2);
   border-radius: var(--r);
   color: var(--text);
   font-family: var(--fn-mono);
-  font-size: 20px;
-  font-weight: 600;
+  font-size: 26px;
+  font-weight: 700;
   text-align: center;
   -webkit-appearance: none;
   appearance: none;
   transition: border-color .15s, box-shadow .15s;
-  min-height: 46px;
+  min-height: 54px;
 }
 .ex-weight-input:focus {
   outline: none;
   border-color: var(--session-col, var(--gold));
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--session-col, var(--gold)) 15%, transparent);
+  box-shadow: 0 0 0 3px rgba(201,168,76,.12);
 }
 .ex-weight-input.saved { border-color: var(--atlas); }
-.ex-kg { font-size: 11px; color: var(--text3); }
-
-.ex-btns { display: flex; align-items: center; gap: 7px; flex-shrink: 0; }
-.ex-rest-btn {
-  padding: 9px 12px;
-  background: transparent;
-  border: 1px solid;
-  border-radius: var(--r);
-  font-size: 12px;
+.ex-kg {
+  font-size: 14px;
+  color: var(--text3);
   font-weight: 600;
+}
+.ex-btns {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.ex-rest-btn {
+  padding: 10px 13px;
+  background: transparent;
+  border: 1.5px solid;
+  border-color: var(--session-col, var(--border2));
+  border-radius: var(--r);
+  color: var(--session-col, var(--text2));
+  font-size: 13px;
+  font-weight: 700;
   font-family: var(--fn-body);
   cursor: pointer;
-  min-height: 46px;
+  min-height: 54px;
   white-space: nowrap;
-  transition: background .15s;
+  letter-spacing: .04em;
+  transition: background .15s, transform .1s;
 }
 .ex-rest-btn:active { transform: scale(.94); }
-.ex-rest-btn.ss { border-color: var(--border); color: var(--text3); cursor: default; font-style: italic; }
-
+.ex-rest-btn.ss {
+  border-color: var(--border);
+  color: var(--text3);
+  cursor: default;
+  font-style: italic;
+  font-weight: 400;
+  font-size: 11px;
+}
 .ex-done-btn {
-  width: 46px; height: 46px;
+  width: 54px;
+  height: 54px;
   background: transparent;
-  border: 1px solid var(--border2);
+  border: 1.5px solid var(--border2);
   border-radius: var(--r);
   color: var(--text4);
-  font-size: 20px;
+  font-size: 22px;
   cursor: pointer;
   transition: all .15s;
   display: flex;
@@ -709,12 +731,11 @@ svg { display: block; }
   border-color: var(--session-col, var(--atlas));
   color: var(--bg);
 }
-
 .ex-incr-lbl {
   font-family: var(--fn-mono);
   font-size: 10px;
   color: var(--text4);
-  padding: 2px 13px 8px 16px;
+  padding: 4px 0 2px 2px;
 }
 
 /* Session complete */
@@ -1092,7 +1113,55 @@ svg { display: block; }
 .pr-wt { font-family: var(--fn-mono); font-size: 14px; font-weight: 600; }
 .pr-date { font-size: 10px; color: var(--text3); }
 
-/* ── DESKTOP CENTERING ──────────────────────────────────────── */
+/* Global rest bar inside workout header */
+.wk-rest-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px 10px;
+  border-bottom: .5px solid var(--border);
+  background: var(--bg2);
+  flex-shrink: 0;
+}
+.wk-rest-bar-label {
+  font-size: 10px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--text3);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.wk-rest-presets {
+  display: flex;
+  gap: 6px;
+  flex: 1;
+}
+.wk-rest-preset {
+  flex: 1;
+  padding: 7px 4px;
+  background: transparent;
+  border: 1px solid var(--border2);
+  border-radius: var(--r-sm);
+  color: var(--text2);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: var(--fn-mono);
+  cursor: pointer;
+  text-align: center;
+  transition: all .15s;
+  min-height: 36px;
+}
+.wk-rest-preset:hover, .wk-rest-preset:active {
+  border-color: var(--gold);
+  color: var(--gold);
+  background: rgba(201,168,76,.08);
+}
+
+/* Rest panel on top of workout overlay */
+body.workout-active .rest-panel.up {
+  bottom: 24px;
+  z-index: 1000;
+}
 @media (min-width: 540px) {
   body { background: #040504; }
   #app { border-left: 1px solid var(--border); border-right: 1px solid var(--border); }

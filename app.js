@@ -893,6 +893,7 @@ const WorkoutMode = {
     requestAnimationFrame(() => overlay.classList.add('open'));
     SessionTimer.start();
     document.body.style.overflow = 'hidden';
+    document.body.classList.add('workout-active');
   },
 
   exit() {
@@ -905,6 +906,7 @@ const WorkoutMode = {
       overlay.innerHTML = '';
     }, 320);
     document.body.style.overflow = '';
+    document.body.classList.remove('workout-active');
     this.sessionId = null;
     this.pendingWeights = {};
   },
@@ -917,16 +919,21 @@ const WorkoutMode = {
     const exHtml = s.exercises.map(ex => {
       const last = Store.lastWeight(ex.id);
       const rec  = Store.recommended(ex.id, ex.incrPct);
-      const prevTxt = rec ? `Rec: ${rec}kg` : last ? `Last: ${last}kg` : 'First session';
+      const prevTxt = rec && last
+        ? `Last: ${last}kg &nbsp;→&nbsp; Rec: ${rec}kg`
+        : rec ? `Recommended: ${rec}kg`
+        : last ? `Last session: ${last}kg`
+        : 'First session — establish baseline';
+
       const badgeHtml = ex.isAnchor
         ? `<span class="badge badge-gold">★</span>`
         : ex.ssTag ? `<span class="badge badge-ss">${ex.ssTag}</span>` : '';
       const ssNoteHtml = ex.ssNote ? `<div class="ex-ss-note">${ex.ssNote}</div>` : '';
       const cuesHtml = ex.cues.map(c=>`<li>${c}</li>`).join('');
-      const restHtml = ex.restSecs > 0
-        ? `<button class="ex-rest-btn" style="border-color:${s.color}50;color:${s.color};"
-             onclick="App.startRest(${ex.restSecs},'${ex.name}')">⏱ ${fmtRest(ex.restSecs)}</button>`
-        : `<span class="ex-rest-btn ss">→ SS</span>`;
+
+      const restBtnHtml = ex.restSecs > 0
+        ? `<button class="ex-rest-btn" onclick="App.startRest(${ex.restSecs},'${ex.name}')">⏱ ${fmtRest(ex.restSecs)}</button>`
+        : `<span class="ex-rest-btn ss">→ Superset</span>`;
 
       return `
       <div class="ex-card" data-ex-id="${ex.id}" data-anchor="${ex.isAnchor}" style="--session-col:${s.color};">
@@ -939,25 +946,37 @@ const WorkoutMode = {
         </div>
         ${ssNoteHtml}
         <ul class="ex-cues hidden">${cuesHtml}</ul>
-        <div class="ex-controls">
-          <div class="ex-weight-group">
-            <div class="ex-prev">${prevTxt}</div>
-            <input class="ex-weight-input" type="number" inputmode="decimal"
-              placeholder="${rec||last||''}" step="0.5" min="0"
-              value="${rec||last||''}"
-              data-ex-id="${ex.id}"
-              onchange="App.handleWeight(this)"
-              onblur="App.handleWeight(this)">
-            <span class="ex-kg">kg</span>
+        <div class="ex-input-section">
+          <div class="ex-prev-row">${prevTxt}</div>
+          <div class="ex-input-row">
+            <div class="ex-weight-wrap">
+              <input class="ex-weight-input"
+                type="number"
+                inputmode="decimal"
+                placeholder="0"
+                step="0.5"
+                min="0"
+                value="${rec !== null ? rec : (last !== null ? last : '')}"
+                data-ex-id="${ex.id}"
+                onchange="App.handleWeight(this)"
+                onblur="App.handleWeight(this)">
+              <span class="ex-kg">kg</span>
+            </div>
+            <div class="ex-btns">
+              ${restBtnHtml}
+              <button class="ex-done-btn" onclick="App.markDone(this)" aria-label="Mark done">✓</button>
+            </div>
           </div>
-          <div class="ex-btns">
-            ${restHtml}
-            <button class="ex-done-btn" onclick="App.markDone(this)" aria-label="Mark done">✓</button>
-          </div>
+          ${ex.incrPct ? `<div class="ex-incr-lbl">+${ex.incrPct}% / session when top rep reached</div>` : ''}
         </div>
-        ${ex.incrPct ? `<div class="ex-incr-lbl">+${ex.incrPct}% / session</div>` : ''}
       </div>`;
     }).join('');
+
+    const presetsHtml = [
+      [60,'1:00'], [90,'1:30'], [120,'2:00'], [180,'3:00']
+    ].map(([secs,lbl])=>
+      `<button class="wk-rest-preset" onclick="App.startRest(${secs},'Rest')">${lbl}</button>`
+    ).join('');
 
     return `
     <div class="wk-header" style="border-bottom-color:${s.color}50;">
@@ -965,6 +984,10 @@ const WorkoutMode = {
       <div class="wk-timer" id="wk-timer">00:00:00</div>
       <div class="wk-progress" id="wk-progress">0/${s.exercises.length}</div>
       <button class="wk-end-btn" onclick="App.exitWorkout()">End</button>
+    </div>
+    <div class="wk-rest-bar">
+      <div class="wk-rest-bar-label">Rest</div>
+      <div class="wk-rest-presets">${presetsHtml}</div>
     </div>
     <div class="wk-scroll">
       <div class="warmup-card">
@@ -1036,18 +1059,88 @@ const GuideRenderers = {
         <div class="cycle-pill-n" style="color:${col};font-size:${id?11:10}px;">${n}</div>
       </div>`;
     }).join('');
+
+    const patterns = [
+      { pattern:'Hip Hinge',          chain:'Posterior Chain Dominant',   color:'#FF5C2B', movements:'Deadlift, RDL',                              sessions:'Hades ★, Atlas',   why:'The most systemically demanding pattern. Engages the entire posterior chain — glutes, hamstrings, spinal erectors — and builds the structural foundation for all athletic movement.' },
+      { pattern:'Knee Flexion/Ext.',  chain:'Anterior Chain Dominant',    color:'#00E587', movements:'Squat, BSS, Leg Extensions, Leg Curl',        sessions:'Atlas ★, Apollo, Hades', why:'Bilateral and unilateral loading of the quads and hamstrings. The squat develops foundational lower body strength; BSS addresses unilateral imbalances and builds single-leg stability.' },
+      { pattern:'Horizontal Push',    chain:'Chest, Anterior Deltoid, Tricep', color:'#4DA6FF', movements:'Incline Barbell, Incline DB, Machine Press, Dips, Cable Fly', sessions:'Apollo ★, Atlas, Hades', why:'Upper chest emphasis throughout. Incline angle preferentially loads the clavicular head of the pectoralis major — the area that links the chest to the shoulder and is typically the most underdeveloped.' },
+      { pattern:'Vertical Pull',      chain:'Lats, Biceps, Rear Delt',    color:'#9B6DFF', movements:'Pull-Ups (overhand), Chin-Ups (supinated)',   sessions:'Atlas, Hades',     why:'Two grip variations hit the lats through different lines of pull. Overhand pull-ups emphasise lat width; supinated chin-ups increase bicep involvement and allow a more complete range of motion.' },
+      { pattern:'Horizontal Pull',    chain:'Mid-Back, Rear Delt, Rhomboids', color:'#C9A84C', movements:'Chest-Supported Row, Face Pull',          sessions:'Atlas, Apollo',    why:'The CS Row builds mid-back thickness and corrects postural imbalances created by pressing volume. Face pulls specifically target external rotators and rear delts — critical for shoulder health and longevity.' },
+      { pattern:'Vertical Push',      chain:'Deltoid, Tricep, Upper Trap', color:'#00C8E8', movements:'Machine Shoulder Press',                     sessions:'Hades',            why:'Overhead pressing builds the deltoid cap that creates the shoulder-to-arm visual transition. Kept as a secondary movement since horizontal pressing volume is already high.' },
+      { pattern:'Core / Anti-Ext.',   chain:'Rectus Abdominis, Obliques, Hip Flexors', color:'#88D040', movements:'Ab Wheel',                       sessions:'Hades',            why:'The ab wheel trains anti-extension — resisting lumbar hyperextension under load — which is the core\'s primary function in all compound lifts. More specific and transferable than crunches.' },
+    ];
+
+    const patternRows = patterns.map(p=>`
+      <div style="background:var(--bg2);border-radius:var(--r);padding:12px 14px;border-left:3px solid ${p.color};margin-bottom:8px;">
+        <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:3px;flex-wrap:wrap;">
+          <div style="font-size:13px;font-weight:700;color:${p.color};">${p.pattern}</div>
+          <div style="font-size:10px;color:var(--text3);">${p.chain}</div>
+        </div>
+        <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:2px;">${p.movements}</div>
+        <div style="font-size:10px;color:var(--text3);font-style:italic;margin-bottom:6px;">Sessions: ${p.sessions}</div>
+        <div style="font-size:11px;color:var(--text3);line-height:1.55;">${p.why}</div>
+      </div>`).join('');
+
+    const repRanges = [
+      { range:'5–8 reps', label:'Strength', color:'#FF5C2B', desc:'Heavy compound anchors — Deadlift, Squat, Pull-Ups, Dips, Incline Barbell. Neural efficiency, maximum motor unit recruitment and progressive overload. These movements form the structural foundation of the programme.' },
+      { range:'8–12 reps', label:'Hypertrophy', color:'#4DA6FF', desc:'Secondary compounds and pressing volume. The sweet spot for muscle protein synthesis — sufficient mechanical tension combined with metabolic stress. Most accessory compound work lives here.' },
+      { range:'12–20 reps', label:'Metabolic', color:'#00E587', desc:'Isolation and accessory work — Lateral Raises, Cable Fly, Face Pulls, Curls. Metabolic stress, blood flow, joint preparation and connective tissue conditioning. Higher reps protect joints in movements with extreme end-range loads.' },
+    ];
+
+    const repHtml = repRanges.map(r=>`
+      <div style="background:var(--bg2);border-radius:var(--r);padding:11px 13px;border:.5px solid ${r.color}30;flex:1;min-width:180px;">
+        <div style="font-family:var(--fn-mono);font-size:16px;font-weight:700;color:${r.color};margin-bottom:2px;">${r.range}</div>
+        <div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:6px;">${r.label}</div>
+        <div style="font-size:11px;color:var(--text3);line-height:1.5;">${r.desc}</div>
+      </div>`).join('');
+
     const sessCards = SESSION_CYCLE.map(id=>{
       const s = SESSIONS[id];
-      return `<div style="background:${s.dim};border:.5px solid ${s.color}30;border-radius:var(--r);padding:12px;">
-        <div style="font-family:var(--fn-head);font-size:22px;font-weight:800;color:${s.color};">${s.name}</div>
-        <div style="font-size:11px;color:var(--text3);font-style:italic;">${s.sub}</div>
-        <div style="font-family:var(--fn-mono);font-size:11px;color:var(--text3);margin-top:4px;">~${s.duration} min · ${s.exercises.length} exercises</div>
+      const anchors = s.exercises.filter(e=>e.isAnchor);
+      return `<div style="background:${s.dim};border:.5px solid ${s.color}30;border-top:2px solid ${s.color};border-radius:var(--r);padding:12px 14px;">
+        <div style="font-family:var(--fn-head);font-size:22px;font-weight:800;color:${s.color};letter-spacing:.06em;">${s.name}</div>
+        <div style="font-size:11px;color:var(--text3);font-style:italic;margin-bottom:8px;">${s.sub} · ~${s.duration} min</div>
+        <div style="font-size:11px;color:var(--text2);">${s.exercises.length} exercises</div>
+        ${anchors.map(a=>`<div style="font-size:10px;color:${s.color};margin-top:3px;">★ ${a.name} — ${a.sets}×${a.reps}</div>`).join('')}
       </div>`;
     }).join('');
+
     return `
+    <div class="guide-insight">
+      <strong>Full-body, three days, rolling cycle.</strong> Every session trains the entire body through fundamental movement patterns, working in the strength and hypertrophy rep range with compound lifts that simultaneously deliver cardiovascular adaptation. Full ROM and technique emphasis make every session a flexibility and joint health protocol in parallel.
+    </div>
+
+    <div style="font-size:10px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin:14px 0 8px;">Rolling Cycle</div>
     <div class="cycle-pills">${pillsHtml}</div>
-    <p class="guide-text" style="margin:10px 0;">Not weekly — rotate continuously. Minimum one full rest day between every session. Deadlift on Hades and Incline Barbell on Apollo are the two priority movements of the programme.</p>
-    <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px;">${sessCards}</div>`;
+    <p style="font-size:11px;color:var(--text3);margin-top:8px;line-height:1.5;">Not weekly. Rotate continuously with at least one full rest day between sessions. This allows frequency to be determined by recovery quality rather than the calendar — an advantage over fixed weekly splits.</p>
+
+    <div style="font-size:10px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin:16px 0 8px;">Three Sessions</div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">${sessCards}</div>
+
+    <div style="font-size:10px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin:16px 0 8px;">Why Full-Body?</div>
+    <div style="background:var(--bg2);border-radius:var(--r);padding:12px 14px;margin-bottom:14px;">
+      <div style="font-size:12px;color:var(--text2);line-height:1.65;">
+        Body-part splits typically stimulate each muscle group once per week. A full-body protocol hitting the same muscle three times per rolling cycle creates three times the adaptation opportunities — more total stimulus per week with appropriate recovery between sessions. For natural trainees, frequency is one of the most underutilised variables available.
+        <br><br>
+        The compound nature of the anchor movements also means each session delivers a meaningful cardiovascular stimulus. A three-set deadlift session with two minutes rest is as much a metabolic conditioning session as it is a strength session.
+      </div>
+    </div>
+
+    <div style="font-size:10px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin:16px 0 8px;">Movement Pattern Coverage</div>
+    <p style="font-size:11px;color:var(--text3);margin-bottom:10px;line-height:1.5;">Rather than training individual muscles, the programme is structured around the six fundamental human movement patterns. All six are covered in every session, ensuring complete and balanced development across the entire body.</p>
+    ${patternRows}
+
+    <div style="font-size:10px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin:16px 0 8px;">Rep Range Rationale</div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;">${repHtml}</div>
+
+    <div style="font-size:10px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin:16px 0 8px;">Full ROM & Joint Health</div>
+    <div style="background:var(--bg2);border-radius:var(--r);padding:12px 14px;">
+      <div style="font-size:12px;color:var(--text2);line-height:1.65;">
+        Every exercise in the programme includes technique cues that specifically emphasise the full stretch position — the 1-second pause at the bottom of the squat, the full dead hang before each pull-up, the paused bottom position of the incline press. This isn't just for muscle stimulus. Training through complete ranges of motion maintains and develops flexibility in the muscles and tendons being loaded, and promotes synovial fluid circulation in the joints. The programme is designed to build the body while simultaneously keeping it functional, mobile and injury-resistant over the long term.
+        <br><br>
+        <strong style="color:var(--gold-l);">Intensity principle:</strong> Working sets at 1–2 RIR (reps in reserve). Hard enough to drive adaptation, conservative enough to maintain form through the set and recover fully before the next session.
+      </div>
+    </div>`;
   },
 
   nutrition() {
