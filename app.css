@@ -1089,7 +1089,6 @@ svg { display: block; }
 .col-beg { color: var(--text3); font-family: var(--fn-mono); }
 .col-int { color: var(--purple); font-weight: 600; font-family: var(--fn-mono); }
 .col-adv { color: var(--gold); font-family: var(--fn-mono); }
-.col-eli { color: var(--gold-l); font-family: var(--fn-mono); }
 .col-cur { font-family: var(--fn-mono); font-weight: 600; }
 .col-prog { min-width: 100px; }
 .prog-pct { font-family: var(--fn-mono); font-size: 11px; color: var(--text3); }

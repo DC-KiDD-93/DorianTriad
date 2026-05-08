@@ -98,16 +98,53 @@ const SESSION_CYCLE = ['atlas', 'hades', 'apollo'];
 // 2. STRENGTH STANDARDS
 // ════════════════════════════════════════════════════════════
 
+// ── Strength standards — from Ratios2026BW.xlsx "WRT BW (GEM)" sheet.
+// Sources: StrengthLevel.com, SymmetricStrength.com, ExRx.net (Kilgore/Rippetoe),
+//          Catalyst Athletics (Greg Everett), OpenPowerlifting/IPF data.
+// type:'abs' — stored weight is total load; compare directly against ratio×BW.
+// type:'bw+' — stored weight is ADDED weight only; effective = stored+BW; ratios are total/BW.
+// type:'x2'  — stored weight is per hand/side; effective = stored×2; ratios are (×2 total)/BW.
 const STANDARDS = [
-  { id:'back-squat',           name:'Back Squat',          beg:0.75, int:1.25, adv:1.75, eli:2.0  },
-  { id:'deadlift',             name:'Deadlift',             beg:1.0,  int:1.5,  adv:2.0,  eli:2.5  },
-  { id:'incline-barbell',      name:'Incline Barbell',      beg:0.5,  int:0.85, adv:1.15, eli:1.4  },
-  { id:'machine-shoulder-press',name:'Overhead Press',      beg:0.35, int:0.6,  adv:0.85, eli:1.0  },
-  { id:'pull-ups',             name:'Pull-ups (+added)',    beg:0.0,  int:0.15, adv:0.4,  eli:0.65 },
-  { id:'dips',                 name:'Dips (+added)',        beg:0.0,  int:0.2,  adv:0.5,  eli:0.75 },
-  { id:'bulgarian-split-squat',name:'Bulgarian SS (×hand)', beg:0.2,  int:0.4,  adv:0.6,  eli:0.8  },
-  { id:'incline-db-press',     name:'Incline DB Press (×hand)', beg:0.2, int:0.35, adv:0.5, eli:0.65 }
+  { id:'back-squat',            name:'Back Squat',           beg:0.80, int:1.20, adv:1.60, type:'abs', color:'#00E587' },
+  { id:'deadlift',              name:'Deadlift',              beg:1.00, int:1.45, adv:2.00, type:'abs', color:'#FF5C2B' },
+  { id:'rdl',                   name:'Romanian DL',           beg:0.80, int:1.20, adv:1.60, type:'abs', color:'#FF8040' },
+  { id:'incline-barbell',       name:'Incline Barbell',       beg:0.45, int:0.80, adv:1.10, type:'abs', color:'#4DA6FF' },
+  { id:'incline-db-press',      name:'Incline DB (×hand)',    beg:0.35, int:0.55, adv:0.75, type:'x2',  color:'#4DA6FF' },
+  { id:'machine-shoulder-press',name:'Shoulder Press',        beg:0.45, int:0.65, adv:0.85, type:'abs', color:'#00C8E8' },
+  { id:'dips',                  name:'Dips (BW+added)',       beg:0.80, int:1.00, adv:1.25, type:'bw+', color:'#FF5C2B' },
+  { id:'pull-ups',              name:'Pull-Ups (BW+added)',   beg:0.80, int:1.00, adv:1.25, type:'bw+', color:'#9B6DFF' },
+  { id:'chin-ups',              name:'Chin-Ups (BW+added)',   beg:0.80, int:1.05, adv:1.30, type:'bw+', color:'#9B6DFF' },
+  { id:'cs-row',                name:'CS Row',                beg:0.50, int:0.75, adv:1.00, type:'abs', color:'#C9A84C' },
+  { id:'bulgarian-split-squat', name:'BSS (×hand)',           beg:0.35, int:0.55, adv:0.85, type:'x2',  color:'#00E587' },
+  { id:'lateral-raise',         name:'Lateral Raise (×hand)', beg:0.10, int:0.15, adv:0.25, type:'x2',  color:'#C9A84C' },
 ];
+
+// ── Strength ratios vs Squat — from Ratios2026BW.xlsx "WRT SQUAT" sheet.
+// Identifies programme-specific imbalances relative to your squat baseline.
+const SQUAT_RATIOS = [
+  { id:'deadlift',              name:'Deadlift',              low:1.20, opt:1.30, high:1.40, type:'abs' },
+  { id:'rdl',                   name:'Romanian DL',           low:0.90, opt:1.00, high:1.10, type:'abs' },
+  { id:'incline-barbell',       name:'Incline Barbell',       low:0.60, opt:0.70, high:0.80, type:'abs' },
+  { id:'incline-db-press',      name:'Incline DB (total)',    low:0.60, opt:0.65, high:0.70, type:'x2'  },
+  { id:'dips',                  name:'Dips (BW+added)',       low:0.90, opt:1.00, high:1.10, type:'bw+' },
+  { id:'pull-ups',              name:'Pull-Ups (BW+added)',   low:0.90, opt:1.05, high:1.20, type:'bw+' },
+  { id:'chin-ups',              name:'Chin-Ups (BW+added)',   low:0.90, opt:1.05, high:1.20, type:'bw+' },
+  { id:'cs-row',                name:'CS Row',                low:0.50, opt:0.53, high:0.70, type:'abs' },
+  { id:'machine-shoulder-press',name:'Shoulder Press',        low:0.45, opt:0.53, high:0.60, type:'abs' },
+  { id:'lateral-raise',         name:'Lateral Raise (total)', low:0.08, opt:0.12, high:0.15, type:'x2'  },
+  { id:'bulgarian-split-squat', name:'BSS (total)',           low:0.30, opt:0.35, high:0.40, type:'x2'  },
+];
+
+// ── Helper — compute effective weight for a given type ──────
+function effectiveWt(type, stored, bw) {
+  if (type === 'bw+') return stored + bw;
+  if (type === 'x2')  return stored * 2;
+  return stored;
+}
+
+// ── Historical training data — imported from DORIAN_TRIAD.xlsx (13 rounds, Feb–May 2026)
+// Loaded into localStorage on first run if no data exists.
+const SEED_DATA = {"sessions":[{"id":"hist_hades_2026-05-04","sessionId":"hades","date":"2026-05-04","week":"2026-W19","duration":null,"exercises":[{"exId":"deadlift","weight":107.5},{"exId":"dips","weight":11.25},{"exId":"bulgarian-split-squat","weight":22.5},{"exId":"chin-ups","weight":11.25},{"exId":"machine-shoulder-press","weight":40.8},{"exId":"leg-extensions","weight":43.0},{"exId":"cable-curl","weight":20.3},{"exId":"tricep-pushdown","weight":13.5}]},{"id":"hist_atlas_2026-05-02","sessionId":"atlas","date":"2026-05-02","week":"2026-W18","duration":null,"exercises":[{"exId":"back-squat","weight":87.5},{"exId":"incline-db-press","weight":27.5},{"exId":"pull-ups","weight":11.25},{"exId":"rdl","weight":87.5},{"exId":"cs-row","weight":67.6},{"exId":"lateral-raise","weight":8.0},{"exId":"calf-raise","weight":8.0},{"exId":"leg-curl","weight":36.0}]},{"id":"hist_apollo_2026-04-28","sessionId":"apollo","date":"2026-04-28","week":"2026-W18","duration":null,"exercises":[{"exId":"incline-barbell","weight":50.0},{"exId":"machine-press","weight":23.0},{"exId":"cable-fly","weight":43.0},{"exId":"face-pull","weight":7.0},{"exId":"bulgarian-split-squat","weight":22.5},{"exId":"forearms","weight":7.5},{"exId":"neck-training","weight":2.5}]},{"id":"hist_atlas_2026-04-23","sessionId":"atlas","date":"2026-04-23","week":"2026-W17","duration":null,"exercises":[{"exId":"back-squat","weight":85.0},{"exId":"incline-db-press","weight":27.5},{"exId":"pull-ups","weight":10.0},{"exId":"rdl","weight":85.0},{"exId":"lateral-raise","weight":8.0},{"exId":"calf-raise","weight":8.0}]},{"id":"hist_hades_2026-04-20","sessionId":"hades","date":"2026-04-20","week":"2026-W17","duration":null,"exercises":[{"exId":"deadlift","weight":100.0},{"exId":"dips","weight":7.5},{"exId":"bulgarian-split-squat","weight":20.0},{"exId":"chin-ups","weight":7.5},{"exId":"machine-shoulder-press","weight":32.5}]},{"id":"hist_atlas_2026-04-16","sessionId":"atlas","date":"2026-04-16","week":"2026-W16","duration":null,"exercises":[{"exId":"back-squat","weight":75.0},{"exId":"incline-db-press","weight":25.0},{"exId":"pull-ups","weight":5.0},{"exId":"rdl","weight":75.0},{"exId":"cs-row","weight":57.6},{"exId":"lateral-raise","weight":7.5},{"exId":"calf-raise","weight":7.5}]},{"id":"hist_hades_2026-04-08","sessionId":"hades","date":"2026-04-08","week":"2026-W15","duration":null,"exercises":[{"exId":"deadlift","weight":105.0},{"exId":"dips","weight":10.0},{"exId":"bulgarian-split-squat","weight":22.5},{"exId":"chin-ups","weight":10.0},{"exId":"machine-shoulder-press","weight":35.0}]},{"id":"hist_atlas_2026-04-06","sessionId":"atlas","date":"2026-04-06","week":"2026-W15","duration":null,"exercises":[{"exId":"back-squat","weight":85.0},{"exId":"incline-db-press","weight":27.5},{"exId":"pull-ups","weight":8.75},{"exId":"rdl","weight":85.0},{"exId":"cs-row","weight":65.1},{"exId":"lateral-raise","weight":7.5},{"exId":"calf-raise","weight":7.5}]},{"id":"hist_hades_2026-03-31","sessionId":"hades","date":"2026-03-31","week":"2026-W14","duration":null,"exercises":[{"exId":"deadlift","weight":102.5},{"exId":"dips","weight":8.75},{"exId":"bulgarian-split-squat","weight":20.0},{"exId":"chin-ups","weight":8.75},{"exId":"machine-shoulder-press","weight":30.0}]},{"id":"hist_atlas_2026-03-28","sessionId":"atlas","date":"2026-03-28","week":"2026-W13","duration":null,"exercises":[{"exId":"back-squat","weight":82.5},{"exId":"incline-db-press","weight":27.5},{"exId":"pull-ups","weight":7.5},{"exId":"rdl","weight":82.5},{"exId":"cs-row","weight":62.6},{"exId":"lateral-raise","weight":8.0},{"exId":"calf-raise","weight":8.0}]},{"id":"hist_hades_2026-03-26","sessionId":"hades","date":"2026-03-26","week":"2026-W13","duration":null,"exercises":[{"exId":"deadlift","weight":105.0},{"exId":"dips","weight":10.0},{"exId":"bulgarian-split-squat","weight":22.5},{"exId":"chin-ups","weight":10.0},{"exId":"machine-shoulder-press","weight":35.8},{"exId":"leg-extensions","weight":36.0},{"exId":"cable-curl","weight":18.0},{"exId":"tricep-pushdown","weight":9.0}]},{"id":"hist_hades_2026-03-25","sessionId":"hades","date":"2026-03-25","week":"2026-W13","duration":null,"exercises":[{"exId":"deadlift","weight":100.0},{"exId":"dips","weight":7.5},{"exId":"bulgarian-split-squat","weight":20.0},{"exId":"chin-ups","weight":7.5}]},{"id":"hist_atlas_2026-03-22","sessionId":"atlas","date":"2026-03-22","week":"2026-W12","duration":null,"exercises":[{"exId":"back-squat","weight":80.0},{"exId":"incline-db-press","weight":27.5},{"exId":"pull-ups","weight":6.25},{"exId":"rdl","weight":80.0},{"exId":"cs-row","weight":60.1},{"exId":"lateral-raise","weight":7.0},{"exId":"calf-raise","weight":8.0}]},{"id":"hist_hades_2026-03-18","sessionId":"hades","date":"2026-03-18","week":"2026-W12","duration":null,"exercises":[{"exId":"deadlift","weight":97.5},{"exId":"dips","weight":6.25},{"exId":"bulgarian-split-squat","weight":17.5},{"exId":"chin-ups","weight":6.25}]},{"id":"hist_atlas_2026-03-16","sessionId":"atlas","date":"2026-03-16","week":"2026-W12","duration":null,"exercises":[{"exId":"back-squat","weight":77.5},{"exId":"incline-db-press","weight":27.5},{"exId":"pull-ups","weight":5.0},{"exId":"rdl","weight":77.5},{"exId":"cs-row","weight":57.6},{"exId":"lateral-raise","weight":6.0},{"exId":"calf-raise","weight":7.5}]},{"id":"hist_hades_2026-03-12","sessionId":"hades","date":"2026-03-12","week":"2026-W11","duration":null,"exercises":[{"exId":"deadlift","weight":95.0},{"exId":"dips","weight":5.0},{"exId":"bulgarian-split-squat","weight":15.0},{"exId":"chin-ups","weight":5.0}]},{"id":"hist_atlas_2026-03-10","sessionId":"atlas","date":"2026-03-10","week":"2026-W11","duration":null,"exercises":[{"exId":"back-squat","weight":75.0},{"exId":"incline-db-press","weight":25.0},{"exId":"pull-ups","weight":3.75},{"exId":"rdl","weight":75.0},{"exId":"cs-row","weight":55.1},{"exId":"lateral-raise","weight":6.0}]},{"id":"hist_hades_2026-03-07","sessionId":"hades","date":"2026-03-07","week":"2026-W10","duration":null,"exercises":[{"exId":"deadlift","weight":92.5},{"exId":"dips","weight":3.75},{"exId":"bulgarian-split-squat","weight":12.5},{"exId":"chin-ups","weight":3.75}]},{"id":"hist_atlas_2026-03-04","sessionId":"atlas","date":"2026-03-04","week":"2026-W10","duration":null,"exercises":[{"exId":"back-squat","weight":72.5},{"exId":"incline-db-press","weight":25.0},{"exId":"pull-ups","weight":2.5},{"exId":"rdl","weight":72.5},{"exId":"cs-row","weight":49.5},{"exId":"lateral-raise","weight":5.0},{"exId":"calf-raise","weight":6.0}]},{"id":"hist_hades_2026-03-02","sessionId":"hades","date":"2026-03-02","week":"2026-W10","duration":null,"exercises":[{"exId":"deadlift","weight":90.0},{"exId":"dips","weight":2.5},{"exId":"bulgarian-split-squat","weight":10.0},{"exId":"chin-ups","weight":2.5}]},{"id":"hist_atlas_2026-02-28","sessionId":"atlas","date":"2026-02-28","week":"2026-W09","duration":null,"exercises":[{"exId":"back-squat","weight":70.0},{"exId":"incline-db-press","weight":22.5},{"exId":"pull-ups","weight":1.25},{"exId":"rdl","weight":70.0},{"exId":"cs-row","weight":47.0},{"exId":"lateral-raise","weight":5.0},{"exId":"calf-raise","weight":5.0}]},{"id":"hist_hades_2026-02-23","sessionId":"hades","date":"2026-02-23","week":"2026-W09","duration":null,"exercises":[{"exId":"deadlift","weight":85.0},{"exId":"dips","weight":1.25},{"exId":"bulgarian-split-squat","weight":7.5},{"exId":"chin-ups","weight":1.25}]},{"id":"hist_atlas_2026-02-21","sessionId":"atlas","date":"2026-02-21","week":"2026-W08","duration":null,"exercises":[{"exId":"back-squat","weight":67.5},{"exId":"incline-db-press","weight":22.5},{"exId":"pull-ups","weight":0.0},{"exId":"rdl","weight":67.5},{"exId":"cs-row","weight":44.5},{"exId":"lateral-raise","weight":4.0},{"exId":"calf-raise","weight":0.0}]},{"id":"hist_hades_2026-02-19","sessionId":"hades","date":"2026-02-19","week":"2026-W08","duration":null,"exercises":[{"exId":"deadlift","weight":80.0},{"exId":"dips","weight":0.0},{"exId":"bulgarian-split-squat","weight":5.0},{"exId":"chin-ups","weight":0.0}]},{"id":"hist_atlas_2026-02-16","sessionId":"atlas","date":"2026-02-16","week":"2026-W08","duration":null,"exercises":[{"exId":"back-squat","weight":65.0},{"exId":"incline-db-press","weight":20.0},{"exId":"pull-ups","weight":0.0},{"exId":"rdl","weight":65.0},{"exId":"cs-row","weight":42.0},{"exId":"lateral-raise","weight":4.0},{"exId":"calf-raise","weight":0.0}]},{"id":"hist_hades_2026-02-14","sessionId":"hades","date":"2026-02-14","week":"2026-W07","duration":null,"exercises":[{"exId":"deadlift","weight":70.0},{"exId":"dips","weight":0.0},{"exId":"bulgarian-split-squat","weight":0.0},{"exId":"chin-ups","weight":0.0}]},{"id":"hist_atlas_2026-02-11","sessionId":"atlas","date":"2026-02-11","week":"2026-W07","duration":null,"exercises":[{"exId":"back-squat","weight":62.5},{"exId":"incline-db-press","weight":20.0},{"exId":"pull-ups","weight":0.0},{"exId":"rdl","weight":62.5},{"exId":"cs-row","weight":39.5},{"exId":"lateral-raise","weight":4.0},{"exId":"calf-raise","weight":0.0}]}],"exerciseLog":{"back-squat":[{"ts":1770768000000,"date":"2026-02-11","week":"2026-W07","weight":62.5},{"ts":1771200000000,"date":"2026-02-16","week":"2026-W08","weight":65.0},{"ts":1771632000000,"date":"2026-02-21","week":"2026-W08","weight":67.5},{"ts":1772236800000,"date":"2026-02-28","week":"2026-W09","weight":70.0},{"ts":1772582400000,"date":"2026-03-04","week":"2026-W10","weight":72.5},{"ts":1773100800000,"date":"2026-03-10","week":"2026-W11","weight":75.0},{"ts":1773619200000,"date":"2026-03-16","week":"2026-W12","weight":77.5},{"ts":1774137600000,"date":"2026-03-22","week":"2026-W12","weight":80.0},{"ts":1774656000000,"date":"2026-03-28","week":"2026-W13","weight":82.5},{"ts":1775433600000,"date":"2026-04-06","week":"2026-W15","weight":85.0},{"ts":1776297600000,"date":"2026-04-16","week":"2026-W16","weight":75.0},{"ts":1776902400000,"date":"2026-04-23","week":"2026-W17","weight":85.0},{"ts":1777680000000,"date":"2026-05-02","week":"2026-W18","weight":87.5}],"incline-db-press":[{"ts":1770768000000,"date":"2026-02-11","week":"2026-W07","weight":20.0},{"ts":1771200000000,"date":"2026-02-16","week":"2026-W08","weight":20.0},{"ts":1771632000000,"date":"2026-02-21","week":"2026-W08","weight":22.5},{"ts":1772236800000,"date":"2026-02-28","week":"2026-W09","weight":22.5},{"ts":1772582400000,"date":"2026-03-04","week":"2026-W10","weight":25.0},{"ts":1773100800000,"date":"2026-03-10","week":"2026-W11","weight":25.0},{"ts":1773619200000,"date":"2026-03-16","week":"2026-W12","weight":27.5},{"ts":1774137600000,"date":"2026-03-22","week":"2026-W12","weight":27.5},{"ts":1774656000000,"date":"2026-03-28","week":"2026-W13","weight":27.5},{"ts":1775433600000,"date":"2026-04-06","week":"2026-W15","weight":27.5},{"ts":1776297600000,"date":"2026-04-16","week":"2026-W16","weight":25.0},{"ts":1776902400000,"date":"2026-04-23","week":"2026-W17","weight":27.5},{"ts":1777680000000,"date":"2026-05-02","week":"2026-W18","weight":27.5}],"pull-ups":[{"ts":1770768000000,"date":"2026-02-11","week":"2026-W07","weight":0.0},{"ts":1771200000000,"date":"2026-02-16","week":"2026-W08","weight":0.0},{"ts":1771632000000,"date":"2026-02-21","week":"2026-W08","weight":0.0},{"ts":1772236800000,"date":"2026-02-28","week":"2026-W09","weight":1.25},{"ts":1772582400000,"date":"2026-03-04","week":"2026-W10","weight":2.5},{"ts":1773100800000,"date":"2026-03-10","week":"2026-W11","weight":3.75},{"ts":1773619200000,"date":"2026-03-16","week":"2026-W12","weight":5.0},{"ts":1774137600000,"date":"2026-03-22","week":"2026-W12","weight":6.25},{"ts":1774656000000,"date":"2026-03-28","week":"2026-W13","weight":7.5},{"ts":1775433600000,"date":"2026-04-06","week":"2026-W15","weight":8.75},{"ts":1776297600000,"date":"2026-04-16","week":"2026-W16","weight":5.0},{"ts":1776902400000,"date":"2026-04-23","week":"2026-W17","weight":10.0},{"ts":1777680000000,"date":"2026-05-02","week":"2026-W18","weight":11.25}],"rdl":[{"ts":1770768000000,"date":"2026-02-11","week":"2026-W07","weight":62.5},{"ts":1771200000000,"date":"2026-02-16","week":"2026-W08","weight":65.0},{"ts":1771632000000,"date":"2026-02-21","week":"2026-W08","weight":67.5},{"ts":1772236800000,"date":"2026-02-28","week":"2026-W09","weight":70.0},{"ts":1772582400000,"date":"2026-03-04","week":"2026-W10","weight":72.5},{"ts":1773100800000,"date":"2026-03-10","week":"2026-W11","weight":75.0},{"ts":1773619200000,"date":"2026-03-16","week":"2026-W12","weight":77.5},{"ts":1774137600000,"date":"2026-03-22","week":"2026-W12","weight":80.0},{"ts":1774656000000,"date":"2026-03-28","week":"2026-W13","weight":82.5},{"ts":1775433600000,"date":"2026-04-06","week":"2026-W15","weight":85.0},{"ts":1776297600000,"date":"2026-04-16","week":"2026-W16","weight":75.0},{"ts":1776902400000,"date":"2026-04-23","week":"2026-W17","weight":85.0},{"ts":1777680000000,"date":"2026-05-02","week":"2026-W18","weight":87.5}],"cs-row":[{"ts":1770768000000,"date":"2026-02-11","week":"2026-W07","weight":39.5},{"ts":1771200000000,"date":"2026-02-16","week":"2026-W08","weight":42.0},{"ts":1771632000000,"date":"2026-02-21","week":"2026-W08","weight":44.5},{"ts":1772236800000,"date":"2026-02-28","week":"2026-W09","weight":47.0},{"ts":1772582400000,"date":"2026-03-04","week":"2026-W10","weight":49.5},{"ts":1773100800000,"date":"2026-03-10","week":"2026-W11","weight":55.1},{"ts":1773619200000,"date":"2026-03-16","week":"2026-W12","weight":57.6},{"ts":1774137600000,"date":"2026-03-22","week":"2026-W12","weight":60.1},{"ts":1774656000000,"date":"2026-03-28","week":"2026-W13","weight":62.6},{"ts":1775433600000,"date":"2026-04-06","week":"2026-W15","weight":65.1},{"ts":1776297600000,"date":"2026-04-16","week":"2026-W16","weight":57.6},{"ts":1777680000000,"date":"2026-05-02","week":"2026-W18","weight":67.6}],"lateral-raise":[{"ts":1770768000000,"date":"2026-02-11","week":"2026-W07","weight":4.0},{"ts":1771200000000,"date":"2026-02-16","week":"2026-W08","weight":4.0},{"ts":1771632000000,"date":"2026-02-21","week":"2026-W08","weight":4.0},{"ts":1772236800000,"date":"2026-02-28","week":"2026-W09","weight":5.0},{"ts":1772582400000,"date":"2026-03-04","week":"2026-W10","weight":5.0},{"ts":1773100800000,"date":"2026-03-10","week":"2026-W11","weight":6.0},{"ts":1773619200000,"date":"2026-03-16","week":"2026-W12","weight":6.0},{"ts":1774137600000,"date":"2026-03-22","week":"2026-W12","weight":7.0},{"ts":1774656000000,"date":"2026-03-28","week":"2026-W13","weight":8.0},{"ts":1775433600000,"date":"2026-04-06","week":"2026-W15","weight":7.5},{"ts":1776297600000,"date":"2026-04-16","week":"2026-W16","weight":7.5},{"ts":1776902400000,"date":"2026-04-23","week":"2026-W17","weight":8.0},{"ts":1777680000000,"date":"2026-05-02","week":"2026-W18","weight":8.0}],"calf-raise":[{"ts":1770768000000,"date":"2026-02-11","week":"2026-W07","weight":0.0},{"ts":1771200000000,"date":"2026-02-16","week":"2026-W08","weight":0.0},{"ts":1771632000000,"date":"2026-02-21","week":"2026-W08","weight":0.0},{"ts":1772236800000,"date":"2026-02-28","week":"2026-W09","weight":5.0},{"ts":1772582400000,"date":"2026-03-04","week":"2026-W10","weight":6.0},{"ts":1773619200000,"date":"2026-03-16","week":"2026-W12","weight":7.5},{"ts":1774137600000,"date":"2026-03-22","week":"2026-W12","weight":8.0},{"ts":1774656000000,"date":"2026-03-28","week":"2026-W13","weight":8.0},{"ts":1775433600000,"date":"2026-04-06","week":"2026-W15","weight":7.5},{"ts":1776297600000,"date":"2026-04-16","week":"2026-W16","weight":7.5},{"ts":1776902400000,"date":"2026-04-23","week":"2026-W17","weight":8.0},{"ts":1777680000000,"date":"2026-05-02","week":"2026-W18","weight":8.0}],"leg-curl":[{"ts":1777680000000,"date":"2026-05-02","week":"2026-W18","weight":36.0}],"deadlift":[{"ts":1771027200000,"date":"2026-02-14","week":"2026-W07","weight":70.0},{"ts":1771459200000,"date":"2026-02-19","week":"2026-W08","weight":80.0},{"ts":1771804800000,"date":"2026-02-23","week":"2026-W09","weight":85.0},{"ts":1772409600000,"date":"2026-03-02","week":"2026-W10","weight":90.0},{"ts":1772841600000,"date":"2026-03-07","week":"2026-W10","weight":92.5},{"ts":1773273600000,"date":"2026-03-12","week":"2026-W11","weight":95.0},{"ts":1773792000000,"date":"2026-03-18","week":"2026-W12","weight":97.5},{"ts":1774396800000,"date":"2026-03-25","week":"2026-W13","weight":100.0},{"ts":1774483200000,"date":"2026-03-26","week":"2026-W13","weight":105.0},{"ts":1774915200000,"date":"2026-03-31","week":"2026-W14","weight":102.5},{"ts":1775606400000,"date":"2026-04-08","week":"2026-W15","weight":105.0},{"ts":1776643200000,"date":"2026-04-20","week":"2026-W17","weight":100.0},{"ts":1777852800000,"date":"2026-05-04","week":"2026-W19","weight":107.5}],"dips":[{"ts":1771027200000,"date":"2026-02-14","week":"2026-W07","weight":0.0},{"ts":1771459200000,"date":"2026-02-19","week":"2026-W08","weight":0.0},{"ts":1771804800000,"date":"2026-02-23","week":"2026-W09","weight":1.25},{"ts":1772409600000,"date":"2026-03-02","week":"2026-W10","weight":2.5},{"ts":1772841600000,"date":"2026-03-07","week":"2026-W10","weight":3.75},{"ts":1773273600000,"date":"2026-03-12","week":"2026-W11","weight":5.0},{"ts":1773792000000,"date":"2026-03-18","week":"2026-W12","weight":6.25},{"ts":1774396800000,"date":"2026-03-25","week":"2026-W13","weight":7.5},{"ts":1774483200000,"date":"2026-03-26","week":"2026-W13","weight":10.0},{"ts":1774915200000,"date":"2026-03-31","week":"2026-W14","weight":8.75},{"ts":1775606400000,"date":"2026-04-08","week":"2026-W15","weight":10.0},{"ts":1776643200000,"date":"2026-04-20","week":"2026-W17","weight":7.5},{"ts":1777852800000,"date":"2026-05-04","week":"2026-W19","weight":11.25}],"bulgarian-split-squat":[{"ts":1771027200000,"date":"2026-02-14","week":"2026-W07","weight":0.0},{"ts":1771459200000,"date":"2026-02-19","week":"2026-W08","weight":5.0},{"ts":1771804800000,"date":"2026-02-23","week":"2026-W09","weight":7.5},{"ts":1772409600000,"date":"2026-03-02","week":"2026-W10","weight":10.0},{"ts":1772841600000,"date":"2026-03-07","week":"2026-W10","weight":12.5},{"ts":1773273600000,"date":"2026-03-12","week":"2026-W11","weight":15.0},{"ts":1773792000000,"date":"2026-03-18","week":"2026-W12","weight":17.5},{"ts":1774396800000,"date":"2026-03-25","week":"2026-W13","weight":20.0},{"ts":1774483200000,"date":"2026-03-26","week":"2026-W13","weight":22.5},{"ts":1774915200000,"date":"2026-03-31","week":"2026-W14","weight":20.0},{"ts":1775606400000,"date":"2026-04-08","week":"2026-W15","weight":22.5},{"ts":1776643200000,"date":"2026-04-20","week":"2026-W17","weight":20.0},{"ts":1777334400000,"date":"2026-04-28","week":"2026-W18","weight":22.5},{"ts":1777852800000,"date":"2026-05-04","week":"2026-W19","weight":22.5}],"chin-ups":[{"ts":1771027200000,"date":"2026-02-14","week":"2026-W07","weight":0.0},{"ts":1771459200000,"date":"2026-02-19","week":"2026-W08","weight":0.0},{"ts":1771804800000,"date":"2026-02-23","week":"2026-W09","weight":1.25},{"ts":1772409600000,"date":"2026-03-02","week":"2026-W10","weight":2.5},{"ts":1772841600000,"date":"2026-03-07","week":"2026-W10","weight":3.75},{"ts":1773273600000,"date":"2026-03-12","week":"2026-W11","weight":5.0},{"ts":1773792000000,"date":"2026-03-18","week":"2026-W12","weight":6.25},{"ts":1774396800000,"date":"2026-03-25","week":"2026-W13","weight":7.5},{"ts":1774483200000,"date":"2026-03-26","week":"2026-W13","weight":10.0},{"ts":1774915200000,"date":"2026-03-31","week":"2026-W14","weight":8.75},{"ts":1775606400000,"date":"2026-04-08","week":"2026-W15","weight":10.0},{"ts":1776643200000,"date":"2026-04-20","week":"2026-W17","weight":7.5},{"ts":1777852800000,"date":"2026-05-04","week":"2026-W19","weight":11.25}],"machine-shoulder-press":[{"ts":1774483200000,"date":"2026-03-26","week":"2026-W13","weight":35.8},{"ts":1774915200000,"date":"2026-03-31","week":"2026-W14","weight":30.0},{"ts":1775606400000,"date":"2026-04-08","week":"2026-W15","weight":35.0},{"ts":1776643200000,"date":"2026-04-20","week":"2026-W17","weight":32.5},{"ts":1777852800000,"date":"2026-05-04","week":"2026-W19","weight":40.8}],"leg-extensions":[{"ts":1774483200000,"date":"2026-03-26","week":"2026-W13","weight":36.0},{"ts":1777852800000,"date":"2026-05-04","week":"2026-W19","weight":43.0}],"cable-curl":[{"ts":1774483200000,"date":"2026-03-26","week":"2026-W13","weight":18.0},{"ts":1777852800000,"date":"2026-05-04","week":"2026-W19","weight":20.3}],"tricep-pushdown":[{"ts":1774483200000,"date":"2026-03-26","week":"2026-W13","weight":9.0},{"ts":1777852800000,"date":"2026-05-04","week":"2026-W19","weight":13.5}],"incline-barbell":[{"ts":1777334400000,"date":"2026-04-28","week":"2026-W18","weight":50.0}],"machine-press":[{"ts":1777334400000,"date":"2026-04-28","week":"2026-W18","weight":23.0}],"cable-fly":[{"ts":1777334400000,"date":"2026-04-28","week":"2026-W18","weight":43.0}],"face-pull":[{"ts":1777334400000,"date":"2026-04-28","week":"2026-W18","weight":7.0}],"forearms":[{"ts":1777334400000,"date":"2026-04-28","week":"2026-W18","weight":7.5}],"neck-training":[{"ts":1777334400000,"date":"2026-04-28","week":"2026-W18","weight":2.5}]}};
 
 // ════════════════════════════════════════════════════════════
 // 3. GUIDE DATA
@@ -204,7 +241,7 @@ const Store = {
   KEY: 'dt_v2',
 
   defaults() {
-    return { v:2, profile:{ bodyweight:85, targetWeight:90, targetBF:14 },
+    return { v:2, profile:{ bodyweight:81, targetWeight:90, targetBF:14 },
              bwLog:[], sessions:[], exerciseLog:{} };
   },
 
@@ -274,13 +311,37 @@ const Store = {
 
   // ── Sessions ────────────────────────────────────────────
   saveSession(sessionId, durationSecs, exerciseWeights) {
+    // Single read-modify-write — avoids the overwrite race condition
+    // where separate logWeight() calls each do their own get/set and
+    // clobber each other's exerciseLog updates.
     const d = this.get();
-    const sess = { id: `s_${Date.now()}`, sessionId, date: todayStr(), week: weekKey(new Date()), duration: durationSecs, exercises: exerciseWeights };
+    const sess = {
+      id: `s_${Date.now()}`, sessionId,
+      date: todayStr(), week: weekKey(new Date()),
+      duration: durationSecs, exercises: exerciseWeights
+    };
     d.sessions.unshift(sess);
-    // Also update exerciseLog
-    exerciseWeights.forEach(({ exId, weight }) => { if (weight) this.logWeight(exId, weight); });
+    // Update exerciseLog in the same operation
+    const now = Date.now();
+    exerciseWeights.forEach(({ exId, weight }) => {
+      if (!weight || isNaN(+weight)) return;
+      if (!d.exerciseLog[exId]) d.exerciseLog[exId] = [];
+      d.exerciseLog[exId].push({
+        ts: now, date: todayStr(), week: weekKey(new Date()),
+        weight: +parseFloat(weight).toFixed(2)
+      });
+    });
     this.set(d);
     return sess;
+  },
+
+  initFromSeed() {
+    const d = this.get();
+    if (d.sessions.length === 0 && Object.keys(d.exerciseLog).length === 0) {
+      d.sessions = [...SEED_DATA.sessions];
+      d.exerciseLog = JSON.parse(JSON.stringify(SEED_DATA.exerciseLog));
+      this.set(d);
+    }
   },
 
   lastSessionId() {
@@ -545,6 +606,80 @@ const Charts = {
       ctx.beginPath(); ctx.arc(x,y,3*devicePixelRatio,0,Math.PI*2);
       ctx.fillStyle='#00E587'; ctx.fill();
     });
+  },
+
+  strengthChart(canvas, entries, standard, bw) {
+    if (!canvas || !entries || entries.length < 1) return;
+    const ctx = canvas.getContext('2d');
+    const DPR = window.devicePixelRatio || 1;
+    const W = canvas.offsetWidth * DPR;
+    const H = canvas.offsetHeight * DPR;
+    canvas.width = W; canvas.height = H;
+    const PAD = { t:28*DPR, r:14*DPR, b:22*DPR, l:46*DPR };
+    const cW = W-PAD.l-PAD.r, cH = H-PAD.t-PAD.b;
+
+    const pts = entries.map(e => ({ date:e.date, v:effectiveWt(standard.type, e.weight, bw) }));
+    const begV = standard.beg * bw;
+    const intV = standard.int * bw;
+    const advV = standard.adv * bw;
+    const allV = [...pts.map(p=>p.v), begV, intV, advV];
+    const minV = Math.min(...allV) * 0.88;
+    const maxV = Math.max(...allV) * 1.10;
+    const range = maxV - minV || 1;
+    const sx = i => PAD.l + (i / (pts.length-1||1)) * cW;
+    const sy = v => PAD.t + cH - ((v - minV) / range) * cH;
+
+    // Reference lines
+    [
+      { v:begV, label:`Beg ${begV.toFixed(0)}kg`, col:'#585856' },
+      { v:intV, label:`Inter ${intV.toFixed(0)}kg`, col:'#9B6DFF' },
+      { v:advV, label:`Adv ${advV.toFixed(0)}kg`, col:'#C9A84C' },
+    ].forEach(r => {
+      const y = sy(r.v);
+      ctx.save();
+      ctx.strokeStyle = r.col; ctx.lineWidth = DPR; ctx.globalAlpha = 0.55;
+      ctx.setLineDash([4*DPR, 4*DPR]);
+      ctx.beginPath(); ctx.moveTo(PAD.l, y); ctx.lineTo(W-PAD.r, y); ctx.stroke();
+      ctx.setLineDash([]); ctx.globalAlpha = 1;
+      ctx.fillStyle = r.col;
+      ctx.font = `${9*DPR}px DM Sans,sans-serif`;
+      ctx.textAlign = 'left';
+      ctx.fillText(r.label, PAD.l + 3*DPR, y - 3*DPR);
+      ctx.restore();
+    });
+
+    const col = standard.color || '#00E587';
+    if (pts.length >= 2) {
+      const grad = ctx.createLinearGradient(0, PAD.t, 0, H-PAD.b);
+      grad.addColorStop(0, col + '30'); grad.addColorStop(1, col + '00');
+      ctx.beginPath();
+      pts.forEach((p,i) => i===0 ? ctx.moveTo(sx(i),sy(p.v)) : ctx.lineTo(sx(i),sy(p.v)));
+      ctx.lineTo(sx(pts.length-1), H-PAD.b);
+      ctx.lineTo(sx(0), H-PAD.b);
+      ctx.closePath(); ctx.fillStyle = grad; ctx.fill();
+      ctx.strokeStyle = col; ctx.lineWidth = 2*DPR; ctx.lineJoin = 'round';
+      ctx.beginPath();
+      pts.forEach((p,i) => i===0 ? ctx.moveTo(sx(i),sy(p.v)) : ctx.lineTo(sx(i),sy(p.v)));
+      ctx.stroke();
+    }
+    pts.forEach((p,i) => {
+      ctx.beginPath(); ctx.arc(sx(i), sy(p.v), 3.5*DPR, 0, Math.PI*2);
+      ctx.fillStyle = col; ctx.fill();
+    });
+
+    // Y axis labels
+    ctx.fillStyle = '#585856'; ctx.textAlign = 'right';
+    ctx.font = `${9*DPR}px DM Sans,sans-serif`;
+    for (let i=0; i<=4; i++) {
+      const v = minV + (i/4)*range;
+      ctx.fillText(v.toFixed(0), PAD.l-4*DPR, sy(v)+3*DPR);
+    }
+    // X axis endpoints
+    if (pts.length >= 2) {
+      ctx.fillStyle = '#585856'; ctx.font = `${8*DPR}px DM Sans,sans-serif`;
+      ctx.textAlign = 'left';  ctx.fillText(pts[0].date.slice(5),      PAD.l,    H-PAD.b+12*DPR);
+      ctx.textAlign = 'right'; ctx.fillText(pts[pts.length-1].date.slice(5), W-PAD.r, H-PAD.b+12*DPR);
+    }
   }
 };
 
@@ -775,83 +910,150 @@ const Views = {
 
   // ── STATS ────────────────────────────────────────────────
   stats() {
-    const d = Store.get();
-    const bw = Store.latestBW();
-    const bwHistory = Store.getBWHistory(90);
-    const prs = Store.allPRs();
-    const total = Store.totalSessions();
-    const thisWk = Store.sessionsThisWeek();
+    const d   = Store.get();
+    const bw  = Store.latestBW();
+    const bwH = Store.getBWHistory(90);
+    const total   = Store.totalSessions();
+    const thisWk  = Store.sessionsThisWeek();
+    const squat   = Store.lastWeight('back-squat') || 0;
 
-    const prHtml = Object.keys(prs).length
-      ? Object.entries(prs).map(([id,e])=>{
-          const name = id.split('-').map(w=>w[0].toUpperCase()+w.slice(1)).join(' ');
-          const sess = Object.values(SESSIONS).find(s=>s.exercises.some(ex=>ex.id===id));
-          const col = sess ? sess.color : 'var(--gold)';
-          return `<div class="pr-row">
-            <div class="pr-ex">${name}</div>
-            <div class="pr-wt" style="color:${col};">${e.weight}kg</div>
-            <div class="pr-date">${fmtDate(e.date)}</div>
-          </div>`;
-        }).join('')
-      : '<div style="padding:14px 16px;font-size:12px;color:var(--text3);">No lifts logged yet</div>';
+    // Build exercise selector options (any exercise with logged data)
+    const trackedIds = Object.keys(d.exerciseLog).filter(id => d.exerciseLog[id].length > 0);
+    const exNames = {};
+    Object.values(SESSIONS).forEach(s => s.exercises.forEach(ex => exNames[ex.id] = ex.name));
+    const exOptions = trackedIds.map(id =>
+      `<option value="${id}">${exNames[id] || id.split('-').map(w=>w[0].toUpperCase()+w.slice(1)).join(' ')}</option>`
+    ).join('');
 
-    const strRows = STANDARDS.map(s=>{
-      const begKg  = (s.beg*bw).toFixed(1);
-      const intKg  = (s.int*bw).toFixed(1);
-      const advKg  = (s.adv*bw).toFixed(1);
-      const eliKg  = (s.eli*bw).toFixed(1);
-      const best   = Store.lastWeight(s.id);
-      let pct=0, cls='';
-      if (best!==null) { pct=Math.round((best/parseFloat(intKg))*100); cls=pct>=100?'achieved':pct>=80?'near':''; }
+    // WRT BW standards rows
+    const bwRows = STANDARDS.map(s => {
+      const stored = Store.lastWeight(s.id);
+      const eff    = stored !== null ? effectiveWt(s.type, stored, bw) : null;
+      const intKg  = (s.int * bw).toFixed(1);
+      const begKg  = (s.beg * bw).toFixed(1);
+      const advKg  = (s.adv * bw).toFixed(1);
+      let pct = 0, cls = '';
+      if (eff !== null) {
+        pct = Math.round((eff / (s.int * bw)) * 100);
+        cls = pct >= 100 ? 'achieved' : pct >= 80 ? 'near' : '';
+      }
+      const dispStored = stored !== null ? `${stored}kg` : '<span style="color:var(--text3)">—</span>';
+      const dispEff    = (eff !== null && s.type !== 'abs') ? `<span style="font-size:9px;color:var(--text3);"> (${eff.toFixed(1)})</span>` : '';
       return `<tr>
         <td class="col-ex">${s.name}</td>
         <td class="col-beg">${begKg}</td>
         <td class="col-int">${intKg}</td>
         <td class="col-adv">${advKg}</td>
-        <td class="col-eli">${eliKg}</td>
-        <td class="col-cur">${best!==null?best+'kg':'<span style="color:var(--text3)">—</span>'}</td>
+        <td class="col-cur">${dispStored}${dispEff}</td>
         <td class="col-prog">
           <div class="progress-track" style="width:100%;margin-bottom:3px;">
             <div class="progress-fill ${cls}" style="width:${Math.min(pct,100)}%;"></div>
           </div>
-          <span class="prog-pct ${cls}">${best!==null?pct+'%':'—'}</span>
+          <span class="prog-pct ${cls}">${eff !== null ? pct+'%' : '—'}</span>
         </td>
       </tr>`;
     }).join('');
 
+    // WRT Squat rows (only meaningful if squat data exists)
+    const sqRows = squat > 0 ? SQUAT_RATIOS.map(s => {
+      const stored = Store.lastWeight(s.id);
+      const eff    = stored !== null ? effectiveWt(s.type, stored, bw) : null;
+      const actual = eff !== null ? eff / squat : null;
+      const optWt  = (s.opt * squat).toFixed(1);
+      let statusCls = '', statusTxt = '—';
+      if (actual !== null) {
+        if (actual < s.low)        { statusCls='below'; statusTxt=`${(actual*100).toFixed(0)}% ↓`; }
+        else if (actual > s.high)  { statusCls='above'; statusTxt=`${(actual*100).toFixed(0)}% ↑`; }
+        else                        { statusCls='ontrack'; statusTxt=`${(actual*100).toFixed(0)}% ✓`; }
+      }
+      const rangeStr = `${(s.low*100).toFixed(0)}–${(s.high*100).toFixed(0)}%`;
+      return `<tr>
+        <td class="col-ex">${s.name}</td>
+        <td style="font-family:var(--fn-mono);font-size:11px;color:var(--text3);">${rangeStr}</td>
+        <td style="font-family:var(--fn-mono);font-size:11px;color:var(--gold);">${optWt}kg</td>
+        <td class="col-cur">${eff !== null ? eff.toFixed(1)+'kg' : '<span style="color:var(--text3)">—</span>'}</td>
+        <td style="font-family:var(--fn-mono);font-size:12px;font-weight:600;
+          color:${statusCls==='ontrack'?'var(--atlas)':statusCls==='below'?'var(--apollo)':'var(--amber)'};">
+          ${statusTxt}
+        </td>
+      </tr>`;
+    }).join('') : null;
+
+    // PRs
+    const prs = Store.allPRs();
+    const prHtml = Object.keys(prs).length
+      ? Object.entries(prs).sort((a,b) => b[1].ts - a[1].ts).map(([id,e]) => {
+          const name = exNames[id] || id.split('-').map(w=>w[0].toUpperCase()+w.slice(1)).join(' ');
+          const sess = Object.values(SESSIONS).find(s => s.exercises.some(ex => ex.id === id));
+          return `<div class="pr-row">
+            <div class="pr-ex">${name}</div>
+            <div class="pr-wt" style="color:${sess?sess.color:'var(--gold)'};">${e.weight}kg</div>
+            <div class="pr-date">${fmtDate(e.date)}</div>
+          </div>`;
+        }).join('')
+      : '<div style="padding:14px 16px;font-size:12px;color:var(--text3);">No lifts logged yet.</div>';
+
+    const bwDelta = bwH.length >= 2
+      ? bwH[bwH.length-1].weight - bwH[0].weight
+      : null;
+
     return `<div class="stats-page">
-      <div class="section-label">Progress</div>
+
+      <!-- Bodyweight trend -->
+      <div class="section-label">Bodyweight</div>
       <div class="card chart-card">
-        <div class="chart-title">Bodyweight Trend</div>
+        <div class="chart-title">90-Day Trend</div>
         <canvas id="bw-chart" class="chart-canvas"></canvas>
         <div class="bw-stats-row">
           <div class="bw-stat-box">
-            <div class="bw-stat-val" style="color:var(--text);">${bw}kg</div>
-            <div class="bw-stat-lbl">Current</div>
+            <div class="bw-stat-val">${bw}kg</div>
+            <div class="bw-stat-lbl">Now</div>
           </div>
           <div class="bw-stat-box">
             <div class="bw-stat-val" style="color:var(--gold);">${d.profile.targetWeight}kg</div>
             <div class="bw-stat-lbl">Target</div>
           </div>
           <div class="bw-stat-box">
-            <div class="bw-stat-val" style="color:${bwHistory.length>=2?(bwHistory[bwHistory.length-1].weight-bwHistory[0].weight>=0?'var(--atlas)':'var(--hades)'):'var(--text3)'};">
-              ${bwHistory.length>=2?(bwHistory[bwHistory.length-1].weight-bwHistory[0].weight>=0?'+':'')+((bwHistory[bwHistory.length-1].weight-bwHistory[0].weight).toFixed(1))+'kg':'—'}
+            <div class="bw-stat-val" style="color:${bwDelta===null?'var(--text3)':bwDelta>=0?'var(--atlas)':'var(--hades)'};">
+              ${bwDelta !== null ? (bwDelta >= 0 ? '+' : '') + bwDelta.toFixed(1) + 'kg' : '—'}
             </div>
-            <div class="bw-stat-lbl">90-day</div>
+            <div class="bw-stat-lbl">90-day Δ</div>
           </div>
         </div>
       </div>
 
-      <div class="section-label">Session Summary</div>
-      <div class="card">
-        <div class="card-row"><div style="font-size:13px;color:var(--text2);">Total sessions</div><div class="mono" style="font-size:16px;font-weight:600;">${total}</div></div>
-        <div class="card-row"><div style="font-size:13px;color:var(--text2);">This week</div><div class="mono" style="font-size:16px;font-weight:600;color:var(--gold);">${thisWk}</div></div>
+      <!-- Exercise progress chart -->
+      <div class="section-label">Exercise Progress</div>
+      <div class="card chart-card">
+        <select id="ex-select" onchange="App.renderExChart()"
+          style="width:100%;padding:9px 12px;background:var(--bg);border:1px solid var(--border2);
+                 border-radius:var(--r);color:var(--text);font-family:var(--fn-body);font-size:13px;
+                 margin-bottom:12px;cursor:pointer;appearance:none;-webkit-appearance:none;">
+          <option value="">Select exercise to chart…</option>
+          ${exOptions}
+        </select>
+        <canvas id="ex-chart" class="chart-canvas" style="display:none;"></canvas>
+        <div id="ex-chart-meta" style="font-size:11px;color:var(--text3);margin-top:6px;display:none;"></div>
       </div>
 
-      <div class="section-label">Strength Standards</div>
+      <!-- Session summary -->
+      <div class="section-label">Sessions</div>
+      <div class="card">
+        <div class="card-row">
+          <div style="font-size:13px;color:var(--text2);">Total logged</div>
+          <div class="mono" style="font-size:17px;font-weight:700;">${total}</div>
+        </div>
+        <div class="card-row">
+          <div style="font-size:13px;color:var(--text2);">This week</div>
+          <div class="mono" style="font-size:17px;font-weight:700;color:var(--gold);">${thisWk}</div>
+        </div>
+      </div>
+
+      <!-- WRT Bodyweight standards -->
+      <div class="section-label">Strength Standards — vs Bodyweight</div>
       <div class="card">
         <div class="str-bw-row">
-          <div class="str-bw-label">Bodyweight for calculations</div>
+          <div class="str-bw-label">Bodyweight</div>
           <input class="str-bw-input" type="number" inputmode="decimal"
             id="str-bw-input" value="${bw}" step="0.1" oninput="App.updateStdBW(this.value)">
           <div class="str-bw-unit">kg</div>
@@ -859,18 +1061,45 @@ const Views = {
         <div class="str-table-wrap">
           <table class="str-table" id="str-table">
             <thead><tr>
-              <th>Exercise</th><th class="col-beg">Beg.</th><th class="col-int">Inter.</th>
-              <th class="col-adv">Adv.</th><th class="col-eli">Elite</th>
-              <th>Best</th><th>vs Inter.</th>
+              <th>Exercise</th><th class="col-beg">Beg.</th>
+              <th class="col-int">Inter.</th><th class="col-adv">Adv.</th>
+              <th>Logged</th><th>vs Inter.</th>
             </tr></thead>
-            <tbody>${strRows}</tbody>
+            <tbody id="str-tbody">${bwRows}</tbody>
           </table>
         </div>
-        <div class="str-note">Working set weights as bodyweight multiples. Logged via Workout Mode.</div>
+        <div class="str-note">
+          Sources: StrengthLevel.com, SymmetricStrength.com, ExRx.net (Kilgore/Rippetoe).
+          BW+ exercises show added weight; effective total in brackets. ×hand exercises show per-hand; total = ×2.
+        </div>
       </div>
 
+      <!-- WRT Squat ratios -->
+      <div class="section-label">Strength Balance — vs Squat</div>
+      <div class="card">
+        <div style="padding:10px 16px 0;font-size:11px;color:var(--text3);line-height:1.5;">
+          Compares each lift's effective weight against your current squat (${squat}kg).
+          <span style="color:var(--atlas);">✓ in range</span> · 
+          <span style="color:var(--apollo);">↓ below range</span> · 
+          <span style="color:var(--amber);">↑ above range</span>
+        </div>
+        ${sqRows ? `
+        <div class="str-table-wrap">
+          <table class="str-table">
+            <thead><tr>
+              <th>Exercise</th><th>Target Range</th><th>Optimum</th><th>Actual</th><th>Status</th>
+            </tr></thead>
+            <tbody>${sqRows}</tbody>
+          </table>
+        </div>
+        <div class="str-note">Source: Ratios2026BW.xlsx — WRT SQUAT sheet (your personal framework).</div>
+        ` : `<div style="padding:14px 16px;font-size:12px;color:var(--text3);">Log a Back Squat session to enable this table.</div>`}
+      </div>
+
+      <!-- PRs -->
       <div class="section-label">Personal Records</div>
       <div class="card"><div class="pr-grid">${prHtml}</div></div>
+
     </div>`;
   }
 };
@@ -1254,13 +1483,56 @@ const App = {
   _afterRender(tab) {
     if (tab === 'stats') {
       requestAnimationFrame(() => {
-        const canvas = el('bw-chart');
-        if (canvas) {
+        const bwCanvas = el('bw-chart');
+        if (bwCanvas) {
           const hist = Store.getBWHistory(90);
-          Charts.bwTrend(canvas, hist, Store.get().profile.targetWeight);
+          Charts.bwTrend(bwCanvas, hist, Store.get().profile.targetWeight);
+        }
+        // Auto-select first exercise with enough data for a chart
+        const sel = el('ex-select');
+        if (sel) {
+          const d = Store.get();
+          const firstRich = Object.entries(d.exerciseLog)
+            .find(([,entries]) => entries.length >= 3);
+          if (firstRich) { sel.value = firstRich[0]; this.renderExChart(); }
         }
       });
     }
+  },
+
+  renderExChart() {
+    const sel = el('ex-select');
+    const canvas = el('ex-chart');
+    const meta = el('ex-chart-meta');
+    if (!sel || !canvas) return;
+
+    const exId = sel.value;
+    if (!exId) { canvas.style.display='none'; if(meta) meta.style.display='none'; return; }
+
+    const d = Store.get();
+    const entries = (d.exerciseLog[exId] || []).slice(); // oldest first
+    if (!entries.length) { canvas.style.display='none'; return; }
+
+    // Find standard for this exercise
+    const standard = STANDARDS.find(s => s.id === exId) || { beg:0, int:1, adv:2, type:'abs', color:'#C9A84C' };
+    const bw = Store.latestBW();
+
+    canvas.style.display = 'block';
+    if (meta) meta.style.display = 'block';
+
+    requestAnimationFrame(() => {
+      Charts.strengthChart(canvas, entries, standard, bw);
+
+      if (meta) {
+        const last = entries[entries.length-1];
+        const eff  = effectiveWt(standard.type, last.weight, bw);
+        const intT = standard.int * bw;
+        const pct  = Math.round((eff / intT) * 100);
+        const typeNote = standard.type === 'bw+' ? ` (+${last.weight}kg added, ${eff.toFixed(1)}kg total)` :
+                         standard.type === 'x2'  ? ` (${last.weight}kg ×hand, ${eff.toFixed(1)}kg total)` : '';
+        meta.innerHTML = `Latest: <strong>${last.weight}kg</strong>${typeNote} &nbsp;·&nbsp; ${pct}% of intermediate &nbsp;·&nbsp; ${entries.length} sessions logged`;
+      }
+    });
   },
 
   // ── Workout ─────────────────────────────────────────────
@@ -1339,29 +1611,33 @@ const App = {
     this.goTab('home');
   },
 
-  // ── Stats ────────────────────────────────────────────────
   updateStdBW(val) {
     const bw = parseFloat(val);
     if (!bw || bw < 30 || bw > 300) return;
     const d = Store.get(); d.profile.bodyweight = bw; Store.set(d);
-    const tbody = el('str-table')?.querySelector('tbody');
+    const tbody = el('str-tbody');
     if (!tbody) return;
-    tbody.innerHTML = STANDARDS.map(s=>{
-      const bKg=(s.beg*bw).toFixed(1), iKg=(s.int*bw).toFixed(1);
-      const aKg=(s.adv*bw).toFixed(1), eKg=(s.eli*bw).toFixed(1);
-      const best=Store.lastWeight(s.id);
-      let pct=0,cls='';
-      if(best!==null){pct=Math.round((best/parseFloat(iKg))*100);cls=pct>=100?'achieved':pct>=80?'near':'';}
+    tbody.innerHTML = STANDARDS.map(s => {
+      const stored = Store.lastWeight(s.id);
+      const eff    = stored !== null ? effectiveWt(s.type, stored, bw) : null;
+      const intKg  = (s.int * bw).toFixed(1);
+      const begKg  = (s.beg * bw).toFixed(1);
+      const advKg  = (s.adv * bw).toFixed(1);
+      let pct = 0, cls = '';
+      if (eff !== null) { pct = Math.round((eff / (s.int*bw)) * 100); cls = pct>=100?'achieved':pct>=80?'near':''; }
+      const dispStored = stored !== null ? `${stored}kg` : '<span style="color:var(--text3)">—</span>';
+      const dispEff = (eff !== null && s.type !== 'abs') ? `<span style="font-size:9px;color:var(--text3);"> (${eff.toFixed(1)})</span>` : '';
       return `<tr>
         <td class="col-ex">${s.name}</td>
-        <td class="col-beg">${bKg}</td><td class="col-int">${iKg}</td>
-        <td class="col-adv">${aKg}</td><td class="col-eli">${eKg}</td>
-        <td class="col-cur">${best!==null?best+'kg':'<span style="color:var(--text3)">—</span>'}</td>
+        <td class="col-beg">${begKg}</td>
+        <td class="col-int">${intKg}</td>
+        <td class="col-adv">${advKg}</td>
+        <td class="col-cur">${dispStored}${dispEff}</td>
         <td class="col-prog">
           <div class="progress-track" style="width:100%;margin-bottom:3px;">
             <div class="progress-fill ${cls}" style="width:${Math.min(pct,100)}%;"></div>
           </div>
-          <span class="prog-pct ${cls}">${best!==null?pct+'%':'—'}</span>
+          <span class="prog-pct ${cls}">${eff!==null?pct+'%':'—'}</span>
         </td>
       </tr>`;
     }).join('');
@@ -1399,5 +1675,6 @@ const App = {
 // ════════════════════════════════════════════════════════════
 
 document.addEventListener('DOMContentLoaded', function () {
+  Store.initFromSeed();
   App.goTab('home');
 });
