@@ -204,7 +204,7 @@ const Store = {
   KEY: 'dt_v2',
 
   defaults() {
-    return { v:2, profile:{ bodyweight:81, targetWeight:90, targetBF:14 },
+    return { v:2, profile:{ bodyweight:85, targetWeight:90, targetBF:14 },
              bwLog:[], sessions:[], exerciseLog:{} };
   },
 
