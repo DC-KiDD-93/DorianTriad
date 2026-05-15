@@ -310,18 +310,16 @@ const Store = {
   },
 
   // ── Sessions ────────────────────────────────────────────
-  saveSession(sessionId, durationSecs, exerciseWeights) {
+  saveSession(sessionId, durationSecs, exerciseWeights, notes) {
     // Single read-modify-write — avoids the overwrite race condition
-    // where separate logWeight() calls each do their own get/set and
-    // clobber each other's exerciseLog updates.
     const d = this.get();
     const sess = {
       id: `s_${Date.now()}`, sessionId,
       date: todayStr(), week: weekKey(new Date()),
-      duration: durationSecs, exercises: exerciseWeights
+      duration: durationSecs, exercises: exerciseWeights,
+      notes: notes || ''
     };
     d.sessions.unshift(sess);
-    // Update exerciseLog in the same operation
     const now = Date.now();
     exerciseWeights.forEach(({ exId, weight }) => {
       if (!weight || isNaN(+weight)) return;
@@ -333,6 +331,26 @@ const Store = {
     });
     this.set(d);
     return sess;
+  },
+
+  importData(jsonStr) {
+    let incoming;
+    try { incoming = JSON.parse(jsonStr); } catch(_) { throw new Error('Invalid file — could not parse JSON.'); }
+    if (!incoming.sessions || !incoming.exerciseLog) throw new Error('Invalid backup file format.');
+    const d = this.get();
+    // Merge sessions — skip any already present by ID
+    const existIds = new Set(d.sessions.map(s => s.id));
+    const newSess = incoming.sessions.filter(s => !existIds.has(s.id));
+    d.sessions = [...d.sessions, ...newSess].sort((a,b) => b.date.localeCompare(a.date));
+    // Merge exercise log entries — skip duplicates by timestamp
+    Object.entries(incoming.exerciseLog).forEach(([exId, entries]) => {
+      if (!d.exerciseLog[exId]) d.exerciseLog[exId] = [];
+      const existing = new Set(d.exerciseLog[exId].map(e => e.ts));
+      const newEntries = entries.filter(e => !existing.has(e.ts));
+      d.exerciseLog[exId] = [...d.exerciseLog[exId], ...newEntries].sort((a,b) => a.ts - b.ts);
+    });
+    this.set(d);
+    return newSess.length;
   },
 
   initFromSeed() {
@@ -438,15 +456,46 @@ function fmtDate(str) {
   return new Date(str+'T12:00:00').toLocaleDateString('en-IE',{weekday:'short',day:'numeric',month:'short'});
 }
 
+// ── Audio — one shared AudioContext, unlocked on first user tap.
+// Creating a fresh AudioContext per beep is unreliable in Chrome (gets suspended).
+let _AC = null;
+
+function unlockAudio() {
+  if (_AC) return;
+  try { _AC = new (window.AudioContext || window.webkitAudioContext)(); } catch(_) {}
+}
+
 function beep() {
+  unlockAudio();
+  if (!_AC) return;
   try {
-    const ac = new (window.AudioContext||window.webkitAudioContext)();
-    const o = ac.createOscillator(), g = ac.createGain();
-    o.connect(g); g.connect(ac.destination);
-    o.frequency.setValueAtTime(880, ac.currentTime);
-    g.gain.setValueAtTime(0.25, ac.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime+0.5);
-    o.start(); o.stop(ac.currentTime+0.5);
+    if (_AC.state === 'suspended') _AC.resume();
+    const t = _AC.currentTime;
+    // 3-tone pattern — cuts through music better than a single tone
+    [[880,0],[660,0.18],[880,0.36]].forEach(([freq,delay]) => {
+      const o = _AC.createOscillator(), g = _AC.createGain();
+      o.connect(g); g.connect(_AC.destination);
+      o.frequency.value = freq;
+      g.gain.setValueAtTime(0, t+delay);
+      g.gain.linearRampToValueAtTime(1.0, t+delay+0.01);
+      g.gain.exponentialRampToValueAtTime(0.001, t+delay+0.28);
+      o.start(t+delay); o.stop(t+delay+0.3);
+    });
+  } catch(_) {}
+}
+
+function beepShort() {
+  // Single short pulse for countdown warnings
+  unlockAudio();
+  if (!_AC) return;
+  try {
+    if (_AC.state === 'suspended') _AC.resume();
+    const o = _AC.createOscillator(), g = _AC.createGain();
+    o.connect(g); g.connect(_AC.destination);
+    o.frequency.value = 660;
+    g.gain.setValueAtTime(0.5, _AC.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, _AC.currentTime+0.12);
+    o.start(); o.stop(_AC.currentTime+0.12);
   } catch(_) {}
 }
 
@@ -481,10 +530,13 @@ const RestTimer = {
   start(seconds, label) {
     clearInterval(this._iv);
     this._total = seconds; this._left = seconds;
+    unlockAudio(); // Unlock audio context on user tap (required by Chrome)
     const panel=el('rest-panel'), cnt=el('rest-count'), fill=el('rest-fill'), lbl=el('rest-label');
     if (!panel) return;
     if (lbl) lbl.textContent = label || 'Rest';
-    panel.classList.add('up'); vib(40);
+    panel.classList.remove('alarm');
+    panel.classList.add('up');
+    vib(40);
     if (cnt) { cnt.textContent = fmtRest(this._left); cnt.classList.remove('ending'); }
     if (fill) { fill.style.width='0%'; fill.classList.remove('ending'); }
     this._iv = setInterval(() => this._tick(), 1000);
@@ -493,10 +545,26 @@ const RestTimer = {
   _tick() {
     this._left = Math.max(0, this._left-1);
     const pct = ((this._total-this._left)/this._total)*100;
-    const cnt=el('rest-count'), fill=el('rest-fill');
+    const cnt=el('rest-count'), fill=el('rest-fill'), panel=el('rest-panel');
     if (cnt) { cnt.textContent = fmtRest(this._left); cnt.classList.toggle('ending', this._left<=10); }
     if (fill) { fill.style.width=pct+'%'; fill.classList.toggle('ending', this._left<=10); }
-    if (this._left<=0) { clearInterval(this._iv); beep(); vib([200,100,200]); setTimeout(()=>this.dismiss(),2000); }
+
+    // Warning pulses at 10s and 5s remaining
+    if (this._left === 10) { vib(80); beepShort(); }
+    if (this._left === 5)  { vib([60,40,60]); beepShort(); }
+
+    if (this._left<=0) {
+      clearInterval(this._iv);
+      beep();
+      vib([300,100,300,100,300]); // More aggressive 3-pulse pattern
+      if (panel) panel.classList.add('alarm');
+      // Full-screen flash overlay
+      const flash = document.createElement('div');
+      flash.className = 'rest-complete-flash';
+      document.body.appendChild(flash);
+      setTimeout(() => flash.remove(), 1200);
+      setTimeout(() => this.dismiss(), 3000);
+    }
   },
 
   dismiss() {
@@ -842,6 +910,8 @@ const Views = {
             <span class="log-ex-wt" style="color:${sess.color};">${e.weight}kg</span>
           </div>`;
         }).join('');
+        const notesHtml = s.notes
+          ? `<div class="log-session-notes">${s.notes}</div>` : '';
         return `
         <div class="log-session-card">
           <div class="log-session-head" onclick="this.nextElementSibling.classList.toggle('hidden')">
@@ -851,7 +921,10 @@ const Views = {
             <div class="log-session-dur">${s.duration?fmtDur(s.duration):''}</div>
             <div class="log-session-toggle">▾</div>
           </div>
-          <div class="log-ex-rows hidden">${exHtml||'<div style="padding:10px 16px;font-size:12px;color:var(--text3);">No weights logged</div>'}</div>
+          <div class="log-ex-rows hidden">
+            ${exHtml||'<div style="padding:10px 16px;font-size:12px;color:var(--text3);">No weights logged</div>'}
+            ${notesHtml}
+          </div>
         </div>`;
       }).join('');
       return `
@@ -872,6 +945,15 @@ const Views = {
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Export CSV
         </button>
+        <button class="btn btn-ghost" onclick="App.exportJSON()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Backup JSON
+        </button>
+        <label class="btn btn-ghost" style="cursor:pointer;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Restore JSON
+          <input type="file" accept=".json" style="display:none;" onchange="App.importJSON(this)">
+        </label>
       </div>
     </div>`;
   },
@@ -1228,6 +1310,11 @@ const WorkoutMode = {
       </div>
       ${exHtml}
       <div class="wk-finish">
+        <div class="wk-notes-wrap">
+          <textarea id="session-notes-input" class="wk-notes-input"
+            placeholder="Session notes… how it felt, anything notable, sleep quality, energy level"
+            rows="3"></textarea>
+        </div>
         <button class="wk-finish-btn" onclick="App.finishSession()">Complete Session</button>
       </div>
     </div>`;
@@ -1537,6 +1624,7 @@ const App = {
 
   // ── Workout ─────────────────────────────────────────────
   startWorkout(sessionId) {
+    unlockAudio(); // Unlock before entering workout so beep() works from timers
     WorkoutMode.enter(sessionId);
   },
 
@@ -1550,9 +1638,10 @@ const App = {
     const secs = SessionTimer.elapsed();
     const weights = WorkoutMode.collectWeights();
     const logged = weights.filter(w => w.weight).length;
+    const notes = (el('session-notes-input')?.value || '').trim();
     const dur = fmtDur(secs);
     if (confirm(`Session complete ✓\nDuration: ${dur}\nExercises logged: ${logged}/${weights.length}\n\nSave and exit?`)) {
-      Store.saveSession(WorkoutMode.sessionId, secs, weights);
+      Store.saveSession(WorkoutMode.sessionId, secs, weights, notes);
       WorkoutMode.exit();
       this.goTab('log');
     }
@@ -1667,7 +1756,33 @@ const App = {
   },
 
   // ── Export ───────────────────────────────────────────────
-  exportCSV() { Store.exportCSV(); }
+  exportCSV() { Store.exportCSV(); },
+
+  exportJSON() {
+    const d = Store.get();
+    const blob = new Blob([JSON.stringify(d, null, 2)], { type:'application/json' });
+    const url  = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `dorian-triad-backup-${todayStr()}.json`;
+    a.click(); URL.revokeObjectURL(url);
+  },
+
+  importJSON(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const count = Store.importData(e.target.result);
+        alert(`Restore complete. ${count} new session${count!==1?'s':''} imported.`);
+        this.goTab('log');
+      } catch(err) {
+        alert(`Restore failed: ${err.message}`);
+      }
+    };
+    reader.readAsText(file);
+    input.value = ''; // Reset so same file can be re-imported
+  },
 };
 
 // ════════════════════════════════════════════════════════════

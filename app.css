@@ -1161,6 +1161,54 @@ body.workout-active .rest-panel.up {
   bottom: 24px;
   z-index: 1000;
 }
+
+/* ── REST ALARM STATES ─────────────────────────────────────── */
+.rest-panel.alarm {
+  border-color: var(--gold) !important;
+  animation: restPulse .6s ease-in-out infinite;
+}
+@keyframes restPulse {
+  0%, 100% { box-shadow: 0 8px 40px rgba(0,0,0,.7); }
+  50%       { box-shadow: 0 0 40px rgba(201,168,76,.55), 0 8px 40px rgba(0,0,0,.7); }
+}
+.rest-complete-flash {
+  position: fixed; inset: 0;
+  background: rgba(201,168,76,.18);
+  z-index: 9999; pointer-events: none;
+  animation: screenFlash 1.2s ease-out forwards;
+}
+@keyframes screenFlash {
+  0% { opacity:1; } 40% { opacity:.7; } 100% { opacity:0; }
+}
+
+/* ── SESSION NOTES ─────────────────────────────────────────── */
+.wk-notes-wrap { padding: 0 12px 12px; }
+.wk-notes-input {
+  width: 100%;
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: var(--r);
+  color: var(--text2);
+  font-family: var(--fn-body);
+  font-size: 13px;
+  line-height: 1.5;
+  padding: 10px 12px;
+  resize: none;
+  transition: border-color .15s;
+}
+.wk-notes-input:focus { outline: none; border-color: var(--gold); color: var(--text); }
+.wk-notes-input::placeholder { color: var(--text4); }
+
+.log-session-notes {
+  font-size: 11px; color: var(--text3); font-style: italic;
+  padding: 8px 16px 10px; border-top: .5px solid var(--border);
+  line-height: 1.55;
+}
+
+/* ── EXPORT / IMPORT ROW ───────────────────────────────────── */
+.export-row { padding: 16px; display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.export-row .btn { font-size: 11px; padding: 8px 14px; min-height: 40px; }
+
 @media (min-width: 540px) {
   body { background: #040504; }
   #app { border-left: 1px solid var(--border); border-right: 1px solid var(--border); }
