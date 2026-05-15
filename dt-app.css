@@ -67,7 +67,8 @@ body.dt-active .sec { display: none !important; }
   font-weight: 400;
   letter-spacing: -0.02em;
   flex: 1;
-  line-height: 1;
+  line-height: 1.15;
+  padding-top: 2px;
 }
 .dt-wk-timer {
   font-family: 'JetBrains Mono', monospace;
@@ -142,7 +143,7 @@ body.dt-active .sec { display: none !important; }
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 14px 16px 10px;
+  padding: 18px 16px 12px;
 }
 .dt-card-name-btn {
   flex: 1;
@@ -163,12 +164,13 @@ body.dt-active .sec { display: none !important; }
   font-size: 20px;
   font-weight: 400;
   color: #F4F1EC;
-  line-height: 1.15;
+  line-height: 1.35;
   display: flex;
   align-items: center;
   gap: 6px;
   flex-wrap: wrap;
   letter-spacing: -0.01em;
+  padding-top: 2px;
 }
 .dt-card-badge {
   display: inline-flex;
