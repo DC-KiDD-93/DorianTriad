@@ -242,7 +242,7 @@ const Store = {
 
   defaults() {
     return { v:2, profile:{ bodyweight:81, targetWeight:90, targetBF:14 },
-             bwLog:[], sessions:[], exerciseLog:{} };
+             bwLog:[], sessions:[], exerciseLog:{}, sleepLog:[] };
   },
 
   get() {
@@ -275,6 +275,33 @@ const Store = {
   latestBW() {
     const h = this.get().bwLog;
     return h.length ? h[h.length-1].weight : this.get().profile.bodyweight;
+  },
+
+  // ── Sleep log ────────────────────────────────────────────
+  logSleep(hours, quality) {
+    const d = this.get();
+    if (!d.sleepLog) d.sleepLog = [];
+    // Remove any existing entry for today
+    const today = todayStr();
+    const idx = d.sleepLog.findIndex(e => e.date === today);
+    const entry = { date: today, ts: Date.now(), hours: +parseFloat(hours).toFixed(1), quality: +quality };
+    if (idx >= 0) d.sleepLog[idx] = entry;
+    else d.sleepLog.push(entry);
+    this.set(d);
+    return entry;
+  },
+
+  getSleepHistory(days) {
+    const d = this.get();
+    const log = d.sleepLog || [];
+    if (!days) return log;
+    const cutoff = Date.now() - days * 86400000;
+    return log.filter(e => e.ts >= cutoff);
+  },
+
+  latestSleep() {
+    const log = this.get().sleepLog || [];
+    return log.length ? log[log.length-1] : null;
   },
 
   // ── Exercise log ────────────────────────────────────────
@@ -828,6 +855,35 @@ const Views = {
         </div>
       </div>
 
+      <div class="section-label">Last Night's Sleep</div>
+      <div class="card">${(() => {
+        const lastSleep = Store.latestSleep();
+        const sleepColor = lastSleep
+          ? lastSleep.hours >= 8 ? 'var(--atlas)' : lastSleep.hours >= 7 ? 'var(--gold)' : 'var(--hades)'
+          : 'var(--text3)';
+        const stars = lastSleep ? '★'.repeat(lastSleep.quality) + '☆'.repeat(5-lastSleep.quality) : '';
+        return `<div class="sleep-quick-log">
+          <div class="sleep-current">
+            <div class="sleep-hrs" style="color:${sleepColor};">${lastSleep ? lastSleep.hours+'h' : '—'}</div>
+            <div class="sleep-stars">${stars}</div>
+            <div class="sleep-date">${lastSleep ? fmtDate(lastSleep.date) : 'Not logged yet'}</div>
+          </div>
+          <div class="sleep-entry-form">
+            <div style="font-size:10px;color:var(--text3);margin-bottom:6px;letter-spacing:.08em;text-transform:uppercase;">Log tonight</div>
+            <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;">
+              <input id="sleep-hrs-input" type="number" inputmode="decimal" placeholder="7.5"
+                step="0.5" min="3" max="12" class="bw-input" style="width:70px;">
+              <span style="font-size:12px;color:var(--text3);">hours</span>
+            </div>
+            <div style="font-size:10px;color:var(--text3);margin-bottom:6px;">Quality</div>
+            <div class="sleep-quality-btns" id="sleep-quality-btns">
+              ${[1,2,3,4,5].map(q=>`<button class="sleep-q-btn" data-q="${q}" onclick="App.selectSleepQuality(${q})">${q}★</button>`).join('')}
+            </div>
+            <button class="bw-log-btn" onclick="App.logSleep()" style="margin-top:8px;width:100%;">Log Sleep</button>
+          </div>
+        </div>`;
+      })()}</div>
+
       <div class="section-label">Last Session</div>
       <div class="card">
         <div class="card-row">
@@ -919,7 +975,9 @@ const Views = {
             <div class="log-session-name">${sess.name}</div>
             <div class="log-session-date">${fmtDate(s.date)}</div>
             <div class="log-session-dur">${s.duration?fmtDur(s.duration):''}</div>
-            <div class="log-session-toggle">▾</div>
+            <button onclick="event.stopPropagation();App.editSession('${s.id}')"
+              style="background:none;border:none;color:var(--text3);font-size:13px;padding:4px 8px;cursor:pointer;flex-shrink:0;"
+              title="Edit session">✎</button>
           </div>
           <div class="log-ex-rows hidden">
             ${exHtml||'<div style="padding:10px 16px;font-size:12px;color:var(--text3);">No weights logged</div>'}
@@ -964,6 +1022,7 @@ const Views = {
       { id:'roi',          icon:'📊', color:'#C9A84C', title:'Health ROI' },
       { id:'programme',    icon:'🗓',  color:'#00E587', title:'The Programme' },
       { id:'nutrition',    icon:'🥗',  color:'#88D040', title:'Daily Nutrition' },
+      { id:'kitchen',      icon:'🍳',  color:'#FF8040', title:'Kitchen & Recipes' },
       { id:'supplements',  icon:'💊',  color:'#9B6DFF', title:'Supplement Stack' },
       { id:'recovery',     icon:'🛌',  color:'#4DA6FF', title:'Sleep & Recovery' },
       { id:'morning',      icon:'☀️',  color:'#F0CC70', title:'Morning Routine' },
@@ -1536,6 +1595,162 @@ const GuideRenderers = {
           <div style="font-size:13px;font-weight:600;color:${l.color};margin-bottom:8px;">${l.name}</div>
           <ul class="guide-list">${l.points.map(p=>`<li>${p}</li>`).join('')}</ul>
         </div>`).join('') + `</div>`;
+  },
+
+  kitchen() {
+    const serve = (items, col) => items.map(i => `
+      <tr>
+        <td style="font-weight:600;white-space:nowrap;">${i.name}</td>
+        <td style="color:var(--text3);font-size:11px;">${i.serving}</td>
+        <td style="font-family:var(--fn-mono);font-weight:600;color:${col};">${i.kcal}</td>
+        <td style="font-family:var(--fn-mono);color:var(--atlas);">${i.p}g</td>
+        <td style="font-family:var(--fn-mono);color:var(--apollo);">${i.c}g</td>
+        <td style="font-family:var(--fn-mono);color:var(--hades);">${i.f}g</td>
+        ${i.note ? `<td style="font-size:10px;color:var(--text3);font-style:italic;">${i.note}</td>` : '<td></td>'}
+      </tr>`).join('');
+
+    const tHead = `<thead><tr>
+      <th>Item</th><th>Serving</th><th style="color:var(--gold);">kcal</th>
+      <th style="color:var(--atlas);">P</th><th style="color:var(--apollo);">C</th>
+      <th style="color:var(--hades);">F</th><th>Note</th>
+    </tr></thead>`;
+
+    const proteins = [
+      { name:'Chicken Breast',    serving:'200g raw',     kcal:230, p:48, c:0,  f:4,  note:'Weighs raw. ~25% shrink when cooked.' },
+      { name:'Beef Mince (lean)', serving:'200g raw',     kcal:360, p:42, c:0,  f:22, note:'5% fat mince. Use 15% for more kcal.' },
+      { name:'Salmon Fillet',     serving:'180g raw',     kcal:306, p:36, c:0,  f:18, note:'Rich in omega-3. Cook from fresh.' },
+      { name:'Eggs',              serving:'3 large',      kcal:210, p:18, c:1,  f:15, note:'Whole eggs. Yolk is 75% of the kcal.' },
+      { name:'Back Bacon',        serving:'100g cooked',  kcal:218, p:22, c:0,  f:14, note:'Rashers. No need to weigh raw.' },
+      { name:'Greek Yogurt (FF)', serving:'250g',         kcal:202, p:18, c:10, f:10, note:'Full fat only. Fage 5% or Total.' },
+      { name:'Whey Protein',      serving:'1 scoop 35g',  kcal:130, p:25, c:4,  f:2,  note:'Gap filler only. Food first.' },
+      { name:'Tuna (tinned)',     serving:'1 tin 120g',   kcal:121, p:28, c:0,  f:1,  note:'Drained weight. In spring water.' },
+      { name:'Cottage Cheese',    serving:'200g',         kcal:145, p:22, c:6,  f:4,  note:'Good slow-release pre-bed option.' },
+    ];
+    const carbs = [
+      { name:'Porridge Oats',   serving:'80g dry',   kcal:295, p:7,  c:55, f:5, note:'Dry weight. Add whole milk not water.' },
+      { name:'Basmati Rice',    serving:'80g dry',   kcal:285, p:6,  c:63, f:1, note:'Dry weight = ~220g cooked.' },
+      { name:'Pasta',           serving:'90g dry',   kcal:315, p:11, c:66, f:1, note:'Dry weight. Weigh dry, not cooked.' },
+      { name:'Sweet Potato',    serving:'200g raw',  kcal:170, p:3,  c:40, f:0, note:'High micronutrient density. Good swap.' },
+      { name:'Sourdough Bread', serving:'2 slices',  kcal:200, p:7,  c:38, f:2, note:'Real sourdough, not supermarket "sour".' },
+      { name:'Banana',          serving:'1 medium',  kcal:105, p:1,  c:27, f:0, note:'Pre-workout or post-training shake.' },
+      { name:'Medjool Dates',   serving:'3 dates',   kcal:210, p:1,  c:54, f:0, note:'Pre-training -20min. Fast glucose.' },
+      { name:'Muesli',          serving:'60g',       kcal:228, p:5,  c:38, f:6, note:'Add to porridge for density + crunch.' },
+    ];
+    const fats = [
+      { name:'Kerrygold Butter', serving:'15g (1 tbsp)',  kcal:108, p:0, c:0,  f:12, note:'On bread, in eggs, on veg.' },
+      { name:'Olive Oil (EVOO)', serving:'15ml (1 tbsp)', kcal:124, p:0, c:0,  f:14, note:'Cooking + drizzle on meals.' },
+      { name:'Avocado',          serving:'½ fruit ~80g',  kcal:128, p:2, c:4,  f:12, note:'With eggs or as a side. Satiating.' },
+      { name:'Peanut Butter',    serving:'2 tbsp 32g',    kcal:194, p:7, c:6,  f:16, note:'With porridge, yogurt, pre-bed.' },
+      { name:'Honey',            serving:'1 tbsp 20g',    kcal:62,  p:0, c:17, f:0,  note:'On porridge or yogurt. Pure carbs.' },
+      { name:'Whole Milk',       serving:'250ml',         kcal:168, p:8, c:12, f:10, note:'Kerrygold full-fat. Everything.' },
+      { name:'Cheddar Cheese',   serving:'30g',           kcal:120, p:7, c:0,  f:10, note:'On eggs or pasta for easy kcal.' },
+    ];
+
+    const meals = [
+      {
+        name:'Porridge Bowl', tag:'Breakfast A', kcal:910, p:45, c:115, f:32, col:'#00E587',
+        ing:[
+          ['Porridge oats','80g dry'],['Whole milk (cooking)','250ml'],['Muesli','60g'],
+          ['Greek yogurt (FF)','100g'],['Peanut butter','1 tbsp'],['Honey','1 tbsp'],
+        ],
+        method:'Bring milk to simmer, add oats, stir 4 min on medium. Top with yogurt, muesli, PB, honey. Eat immediately.'
+      },
+      {
+        name:'Irish Breakfast', tag:'Breakfast B', kcal:870, p:52, c:34, f:55, col:'#FF8040',
+        ing:[
+          ['Eggs','3 large'],['Back bacon','100g'],['Avocado','½'],
+          ['Sourdough bread','2 slices'],['Kerrygold butter','15g'],
+        ],
+        method:'Fry bacon, scramble or fry eggs in butter. Toast bread, butter generously. Serve with sliced avocado. Season with black pepper.'
+      },
+      {
+        name:'Chicken, Rice & Broccoli', tag:'Dinner A', kcal:690, p:60, c:70, f:16, col:'#4DA6FF',
+        ing:[
+          ['Chicken breast','220g raw'],['Basmati rice','90g dry'],['Broccoli','200g'],
+          ['Olive oil','1 tbsp'],['Garlic + seasoning','to taste'],
+        ],
+        method:'Cook rice (15 min). Season chicken, cook in olive oil 6 min each side until 75°C core. Steam broccoli 4–5 min. Plate together — drizzle the pan juices over rice.'
+      },
+      {
+        name:'Beef Mince & Pasta', tag:'Dinner B', kcal:780, p:54, c:72, f:26, col:'#FF5C2B',
+        ing:[
+          ['Beef mince (lean)','200g raw'],['Pasta','90g dry'],['Tinned tomatoes','400g'],
+          ['Olive oil','1 tbsp'],['Garlic','2 cloves'],['Mixed herbs','generous'],
+        ],
+        method:'Brown mince, drain excess fat. Add garlic 1 min. Add tomatoes + herbs, simmer 10 min. Cook pasta separately al dente. Combine. Add cheddar if needed for kcal.'
+      },
+      {
+        name:'Pre-bed Bowl', tag:'Pre-bed 22:00', kcal:645, p:37, c:68, f:28, col:'#9B6DFF',
+        ing:[
+          ['High-protein cereal','50g'],['Greek yogurt (FF)','250g'],
+          ['Peanut butter','2 tbsp'],['Honey','optional drizzle'],
+        ],
+        method:'Layer yogurt → cereal → PB → honey. Eat cold. Casein protein from yogurt supports overnight muscle protein synthesis.'
+      },
+      {
+        name:'Post-training Shake', tag:'Post-workout', kcal:420, p:34, c:50, f:12, col:'#C9A84C',
+        ing:[
+          ['Whey protein','1 scoop 35g'],['Whole milk','350ml'],
+          ['Banana','1 medium'],['Optional: oats','30g for more kcal'],
+        ],
+        method:'Blend or shake. Drink within 30 min of training. If adding oats, blend — don\'t shake. Add creatine here if convenient.'
+      },
+    ];
+
+    const mealCards = meals.map(m => `
+      <div style="background:var(--bg2);border-radius:var(--r-lg);border:.5px solid ${m.col}30;border-top:2px solid ${m.col};padding:14px;margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;flex-wrap:wrap;gap:4px;">
+          <div>
+            <div style="font-size:15px;font-weight:700;color:${m.col};">${m.name}</div>
+            <div style="font-size:10px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;">${m.tag}</div>
+          </div>
+          <div style="display:flex;gap:10px;text-align:center;flex-shrink:0;">
+            <div><div style="font-family:var(--fn-mono);font-size:16px;font-weight:700;color:${m.col};">${m.kcal}</div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;">kcal</div></div>
+            <div><div style="font-family:var(--fn-mono);font-size:16px;font-weight:700;color:var(--atlas);">${m.p}g</div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;">prot</div></div>
+            <div><div style="font-family:var(--fn-mono);font-size:16px;font-weight:700;color:var(--apollo);">${m.c}g</div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;">carbs</div></div>
+            <div><div style="font-family:var(--fn-mono);font-size:16px;font-weight:700;color:var(--hades);">${m.f}g</div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;">fat</div></div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px;margin-bottom:10px;">
+          ${m.ing.map(([name,qty])=>`<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:.5px solid var(--border);">
+            <span style="color:var(--text2);">${name}</span>
+            <span style="font-family:var(--fn-mono);color:var(--text3);">${qty}</span>
+          </div>`).join('')}
+        </div>
+        <div style="font-size:11px;color:var(--text3);line-height:1.55;padding:8px 0 2px;">${m.method}</div>
+      </div>`).join('');
+
+    return `
+    <div class="guide-insight">
+      <strong>Build-a-plate formula:</strong> 200–250g raw protein + 80–100g dry grain (or 200g sweet potato) + 200g veg + 1 tbsp olive oil. This hits ~680–750 kcal, 50–60g protein, 65–75g carbs per meal. Scale up when you need more. Weigh dry and raw — never cooked.
+    </div>
+
+    <div style="background:var(--bg2);border-radius:var(--r);padding:12px 14px;margin-bottom:14px;">
+      <div style="font-family:var(--fn-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;">Daily target check</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center;">
+        ${[['3200','kcal','var(--gold-l)'],['175g','protein','var(--atlas)'],['360g','carbs','var(--apollo)'],['100g','fat','var(--hades)']].map(([v,l,c])=>`
+        <div><div style="font-family:var(--fn-mono);font-size:18px;font-weight:700;color:${c};">${v}</div><div style="font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;">${l}</div></div>`).join('')}
+      </div>
+    </div>
+
+    <div style="font-size:10px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin:14px 0 8px;">Standard Meals</div>
+    ${mealCards}
+
+    <div style="font-size:10px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin:16px 0 8px;">Protein Sources</div>
+    <div class="str-table-wrap" style="margin-bottom:14px;">
+      <table class="guide-table"><${tHead}<tbody>${serve(proteins,'var(--atlas)')}</tbody></table>
+    </div>
+
+    <div style="font-size:10px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin:14px 0 8px;">Carbohydrate Sources</div>
+    <div class="str-table-wrap" style="margin-bottom:14px;">
+      <table class="guide-table"><${tHead}<tbody>${serve(carbs,'var(--apollo)')}</tbody></table>
+    </div>
+
+    <div style="font-size:10px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin:14px 0 8px;">Fats & Calorie Boosters</div>
+    <div class="str-table-wrap">
+      <table class="guide-table"><${tHead}<tbody>${serve(fats,'var(--hades)')}</tbody></table>
+    </div>
+    <p style="font-size:10px;color:var(--text3);font-style:italic;margin-top:8px;">All macros approximate. Protein and carb values rounded to nearest gram.</p>`;
   }
 };
 
@@ -1755,8 +1970,164 @@ const App = {
     if (card && !card.classList.contains('open')) this.toggleGuide(id);
   },
 
-  // ── Export ───────────────────────────────────────────────
-  exportCSV() { Store.exportCSV(); },
+  // ── Sleep ─────────────────────────────────────────────────
+  _sleepQuality: 4,
+
+  selectSleepQuality(q) {
+    this._sleepQuality = q;
+    document.querySelectorAll('.sleep-q-btn').forEach(btn => {
+      btn.classList.toggle('active', +btn.dataset.q <= q);
+    });
+  },
+
+  logSleep() {
+    const inp = el('sleep-hrs-input');
+    if (!inp) return;
+    const hrs = parseFloat(inp.value);
+    if (!hrs || hrs < 3 || hrs > 14) { inp.focus(); return; }
+    Store.logSleep(hrs, this._sleepQuality);
+    inp.value = '';
+    this.goTab('home');
+  },
+
+  // ── Edit past sessions ────────────────────────────────────
+  editSession(sessionId) {
+    const d = Store.get();
+    const sess = d.sessions.find(s => s.id === sessionId);
+    if (!sess) return;
+    const sessInfo = SESSIONS[sess.sessionId];
+
+    // Build edit modal
+    const existing = document.getElementById('edit-modal');
+    if (existing) existing.remove();
+
+    const exRows = (sess.exercises || []).map(e => {
+      const exInfo = sessInfo.exercises.find(x => x.id === e.exId);
+      const name = exInfo ? exInfo.name : e.exId;
+      return `<div class="edit-ex-row">
+        <div class="edit-ex-name">${name}</div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <input class="edit-weight-inp" type="number" inputmode="decimal"
+            step="0.25" value="${e.weight || ''}" data-ex-id="${e.exId}" placeholder="kg"
+            style="width:72px;padding:7px 8px;background:var(--bg);border:1px solid var(--border2);
+                   border-radius:var(--r);color:var(--text);font-family:var(--fn-mono);font-size:16px;text-align:center;">
+          <span style="font-size:11px;color:var(--text3);">kg</span>
+        </div>
+      </div>`;
+    }).join('');
+
+    const modal = document.createElement('div');
+    modal.id = 'edit-modal';
+    modal.innerHTML = `
+      <div class="edit-backdrop" onclick="App.closeEditModal()"></div>
+      <div class="edit-sheet">
+        <div class="edit-header">
+          <div style="font-family:var(--fn-head);font-size:20px;font-weight:800;color:${sessInfo.color};">${sessInfo.name}</div>
+          <button onclick="App.closeEditModal()" style="background:none;border:none;color:var(--text3);font-size:20px;padding:4px 8px;cursor:pointer;">✕</button>
+        </div>
+        <div class="edit-body">
+          <div class="edit-field-row">
+            <label class="edit-label">Date</label>
+            <input id="edit-date" type="date" value="${sess.date}"
+              style="padding:8px 10px;background:var(--bg);border:1px solid var(--border2);
+                     border-radius:var(--r);color:var(--text);font-family:var(--fn-body);font-size:13px;">
+          </div>
+          <div style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--text3);margin:14px 0 8px;">Weights</div>
+          <div id="edit-ex-list">${exRows}</div>
+          <div class="edit-field-row" style="margin-top:12px;">
+            <label class="edit-label">Notes</label>
+            <textarea id="edit-notes" rows="2"
+              style="width:100%;padding:8px 10px;background:var(--bg);border:1px solid var(--border2);
+                     border-radius:var(--r);color:var(--text);font-family:var(--fn-body);font-size:13px;resize:none;"
+              placeholder="Session notes…">${sess.notes || ''}</textarea>
+          </div>
+        </div>
+        <div class="edit-footer">
+          <button onclick="App.deleteEditSession('${sessionId}')"
+            style="background:none;border:1px solid var(--hades);border-radius:var(--r);
+                   color:var(--hades);padding:9px 16px;font-size:12px;font-weight:600;cursor:pointer;">
+            Delete Session
+          </button>
+          <button onclick="App.saveEditSession('${sessionId}')"
+            style="background:var(--gold);border:none;border-radius:var(--r);
+                   color:var(--bg);padding:9px 20px;font-size:12px;font-weight:700;cursor:pointer;">
+            Save Changes
+          </button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+    requestAnimationFrame(() => modal.classList.add('open'));
+  },
+
+  closeEditModal() {
+    const m = el('edit-modal');
+    if (m) { m.classList.remove('open'); setTimeout(() => m.remove(), 280); }
+  },
+
+  saveEditSession(sessionId) {
+    const d = Store.get();
+    const idx = d.sessions.findIndex(s => s.id === sessionId);
+    if (idx < 0) return;
+
+    const oldDate = d.sessions[idx].date;
+    const newDate = el('edit-date')?.value || oldDate;
+    const newNotes = el('edit-notes')?.value || '';
+
+    // Collect updated weights
+    const updatedExercises = [];
+    document.querySelectorAll('.edit-weight-inp').forEach(inp => {
+      const exId = inp.getAttribute('data-ex-id');
+      const w = parseFloat(inp.value);
+      if (exId) updatedExercises.push({ exId, weight: isNaN(w) ? null : w });
+    });
+
+    // Update session record
+    d.sessions[idx] = {
+      ...d.sessions[idx],
+      date: newDate,
+      week: weekKey(new Date(newDate + 'T12:00:00')),
+      exercises: updatedExercises,
+      notes: newNotes
+    };
+
+    // Update exerciseLog — remove old entries for this session's date, re-add with new values
+    updatedExercises.forEach(({ exId, weight }) => {
+      if (!weight) return;
+      if (!d.exerciseLog[exId]) d.exerciseLog[exId] = [];
+      // Find and update the entry matching the old date (by date match)
+      const existing = d.exerciseLog[exId].find(e => e.date === oldDate);
+      if (existing) {
+        existing.weight = weight;
+        existing.date = newDate;
+        existing.week = weekKey(new Date(newDate + 'T12:00:00'));
+      } else {
+        d.exerciseLog[exId].push({ ts: Date.now(), date: newDate, week: weekKey(new Date(newDate+'T12:00:00')), weight });
+        d.exerciseLog[exId].sort((a,b) => a.date.localeCompare(b.date));
+      }
+    });
+
+    Store.set(d);
+    this.closeEditModal();
+    setTimeout(() => this.goTab('log'), 300);
+  },
+
+  deleteEditSession(sessionId) {
+    if (!confirm('Delete this session? This cannot be undone.')) return;
+    const d = Store.get();
+    const sess = d.sessions.find(s => s.id === sessionId);
+    if (!sess) return;
+    // Remove session
+    d.sessions = d.sessions.filter(s => s.id !== sessionId);
+    // Remove matching exerciseLog entries (same date)
+    sess.exercises.forEach(({ exId }) => {
+      if (d.exerciseLog[exId]) {
+        d.exerciseLog[exId] = d.exerciseLog[exId].filter(e => e.date !== sess.date);
+      }
+    });
+    Store.set(d);
+    this.closeEditModal();
+    setTimeout(() => this.goTab('log'), 300);
+  },
 
   exportJSON() {
     const d = Store.get();
