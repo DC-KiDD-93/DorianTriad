@@ -160,17 +160,16 @@ body.dt-active .sec { display: none !important; }
   -webkit-tap-highlight-color: transparent;
 }
 .dt-card-name {
-  font-family: 'Instrument Serif', 'Cormorant Garamond', serif;
-  font-size: 20px;
-  font-weight: 400;
+  font-family: 'Inter Tight', 'DM Sans', system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 500;
   color: #F4F1EC;
   line-height: 1.35;
   display: flex;
   align-items: center;
   gap: 6px;
   flex-wrap: wrap;
-  letter-spacing: -0.01em;
-  padding-top: 2px;
+  letter-spacing: -0.005em;
 }
 .dt-card-badge {
   display: inline-flex;

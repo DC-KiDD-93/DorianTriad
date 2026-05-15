@@ -507,8 +507,11 @@ svg { display: block; }
   box-shadow: 0 0 0 3px rgba(217,184,115,0.12);
 }
 .bw-log-btn {
-  padding: 9px 20px;
+  padding: 9px 22px;
   min-width: 72px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background: linear-gradient(180deg, var(--gold) 0%, var(--gold-d) 100%);
   border: none;
   border-radius: 100px;
@@ -516,8 +519,8 @@ svg { display: block; }
   font-size: 12px;
   font-weight: 700;
   min-height: 44px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  text-transform: none;
   box-shadow: 0 4px 14px rgba(217,184,115,0.35), inset 0 1px 0 rgba(255,255,255,0.25);
   transition: filter .18s;
 }
@@ -786,17 +789,16 @@ svg { display: block; }
   overflow: visible;
 }
 .ex-card-name {
-  font-family: var(--fn-head);
-  font-size: 20px;
-  font-weight: 400;
+  font-family: var(--fn-body);
+  font-size: 16px;
+  font-weight: 500;
   color: var(--text);
   display: flex;
   align-items: center;
   gap: 6px;
   flex-wrap: wrap;
   line-height: 1.35;
-  letter-spacing: -0.01em;
-  padding-top: 2px;
+  letter-spacing: -0.005em;
 }
 .ex-cue-hint {
   font-size: 10px; color: var(--text3);
@@ -1588,24 +1590,24 @@ body.workout-active .rest-panel.up {
 /* ── SLEEP WIDGET ──────────────────────────────────────────── */
 .sleep-quick-log {
   display: flex;
-  gap: 16px;
-  padding: 16px 18px;
-  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 16px;
+  align-items: center;
   flex-wrap: wrap;
 }
 .sleep-current {
   flex-shrink: 0;
-  text-align: center;
-  padding-right: 16px;
+  text-align: left;
+  padding-right: 14px;
   border-right: 0.5px solid var(--border);
 }
 .sleep-hrs {
   font-family: var(--fn-head);
-  font-size: 40px;
+  font-size: 30px;
   font-weight: 400;
-  line-height: 1;
+  line-height: 1.1;
   margin-bottom: 4px;
-  letter-spacing: -0.025em;
+  letter-spacing: -0.02em;
 }
 .sleep-stars { font-size: 14px; color: var(--gold); margin-bottom: 4px; letter-spacing: 0.1em; }
 .sleep-date  { font-size: 10px; color: var(--text3); letter-spacing: 0.06em; }
