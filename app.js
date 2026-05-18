@@ -1565,14 +1565,178 @@ const GuideRenderers = {
   },
 
   recovery() {
-    return GUIDE.recovery.map(r=>`
-      <div style="background:var(--bg2);border-left:3px solid ${r.color};border-radius:0 var(--r) var(--r) 0;padding:12px 14px;margin-bottom:8px;">
-        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;">
-          <div style="font-size:13px;font-weight:600;color:${r.color};">${r.name}</div>
-          <div style="font-size:10px;color:var(--text3);font-style:italic;">${r.freq}</div>
+    // ── Breathing protocol cards ──────────────────────────────
+    const breathingProtocols = [
+      {
+        name: 'Box Breathing', col: '#4DA6FF', when: 'Post-training · In sauna · Pre-sleep',
+        source: 'Galpin / Mark Divine (SEAL training)',
+        steps: [
+          { label: 'Inhale', detail: '4 seconds — slow, through the nose, fill the belly first then chest' },
+          { label: 'Hold', detail: '4 seconds — shoulders relaxed, jaw unclenched' },
+          { label: 'Exhale', detail: '4 seconds — slow release through mouth or nose' },
+          { label: 'Hold', detail: '4 seconds — rest here, feel the stillness' },
+        ],
+        cycles: '4–8 cycles. Stop if dizzy.',
+        why: 'The structured hold phases actively engage the vagus nerve. Extended breath-hold after exhale is the key driver — it elevates CO₂ tolerance and shifts the autonomic nervous system toward parasympathetic dominance. HRV (heart rate variability) measurably increases within 4 cycles. Galpin identifies this as the primary tool for post-training CNS downregulation.',
+      },
+      {
+        name: 'Physiological Sigh', col: '#00E587', when: 'Between heavy sets · Acute stress · Any moment',
+        source: 'Huberman / Jack Feldman (UCLA, Nature 2017)',
+        steps: [
+          { label: 'Inhale 1', detail: 'Deep inhale through nose — fill your lungs' },
+          { label: 'Inhale 2', detail: 'Immediately sniff again — top up the lungs fully' },
+          { label: 'Exhale', detail: 'Long, slow, complete exhale through mouth — empty fully' },
+        ],
+        cycles: 'Just 1–3 is enough. Works in under 30 seconds.',
+        why: 'The double inhale re-inflates collapsed alveoli (air sacs), dramatically increasing the surface area for gas exchange. The long exhale then offloads CO₂ maximally in one breath. This is the fastest known physiological method to reduce acute stress — faster than any other breathing technique. Use it between deadlift sets or any moment you feel the system is running hot.',
+      },
+      {
+        name: 'Nasal Breathing & CO₂ Tolerance', col: '#C9A84C', when: 'Walks · Light cardio · Sauna',
+        source: 'Andy Galpin — performance physiology',
+        steps: [
+          { label: 'Principle', detail: 'Breathe exclusively through the nose during all low-intensity activity' },
+          { label: 'Progress', detail: 'When you need to open your mouth, you\'ve exceeded your current CO₂ tolerance' },
+          { label: 'Training', detail: 'Maintain nasal-only breathing on your school run, walks, any Zone 1–2 activity' },
+        ],
+        cycles: 'Daily habit during any low-intensity movement.',
+        why: 'CO₂ tolerance — your ability to stay calm and functional as CO₂ builds — is a trainable capacity. The Bohr effect: CO₂ is what actually triggers haemoglobin to release oxygen to tissues. Higher CO₂ tolerance means better oxygen delivery to muscle and better performance under pressure. Galpin flags this as one of the most underappreciated recovery and performance metrics. The sauna is an excellent training environment — heat raises CO₂ production, making nasal breathing harder and the training stimulus greater.',
+      },
+    ];
+
+    const breathingCards = breathingProtocols.map(b => `
+      <div style="background:var(--bg2);border-radius:var(--r-lg);border:.5px solid ${b.col}30;border-top:2px solid ${b.col};padding:14px;margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;flex-wrap:wrap;gap:4px;">
+          <div>
+            <div style="font-size:14px;font-weight:700;color:${b.col};">${b.name}</div>
+            <div style="font-size:10px;color:var(--text3);margin-top:2px;font-style:italic;">${b.when}</div>
+          </div>
+          <div style="font-size:9px;color:var(--text4);background:var(--surf);padding:3px 8px;border-radius:100px;white-space:nowrap;">
+            ${b.source}
+          </div>
         </div>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px;">
+          ${b.steps.map((s,i) => `
+          <div style="display:flex;gap:10px;align-items:flex-start;">
+            <div style="background:${b.col};color:var(--bg);font-size:9px;font-weight:700;padding:2px 7px;border-radius:3px;flex-shrink:0;margin-top:1px;letter-spacing:.04em;">${s.label}</div>
+            <div style="font-size:12px;color:var(--text2);line-height:1.45;">${s.detail}</div>
+          </div>`).join('')}
+        </div>
+        <div style="font-size:11px;color:var(--text3);font-style:italic;border-top:.5px solid var(--border);padding-top:8px;margin-bottom:6px;">${b.cycles}</div>
+        <div style="font-size:11px;color:var(--text3);line-height:1.6;">${b.why}</div>
+      </div>`).join('');
+
+    // ── Combined sauna + breathwork protocol ─────────────────
+    const combinedProtocol = `
+      <div style="background:rgba(255,128,64,.07);border:.5px solid rgba(255,128,64,.3);border-left:3px solid #FF8040;border-radius:0 var(--r-lg) var(--r-lg) 0;padding:16px;margin-bottom:16px;">
+        <div style="font-size:14px;font-weight:700;color:#FF8040;margin-bottom:4px;">Post-Training Protocol — Sauna + Box Breathing</div>
+        <div style="font-size:10px;color:var(--text3);font-style:italic;margin-bottom:12px;">Your current practice — validated and expanded</div>
+
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;">
+          ${[
+            ['1','5 min walk','#FF8040','Don\'t sit immediately after training. 5 minutes of slow walking maintains blood flow, begins the autonomic transition, and prevents blood pooling. This is non-optional after Hades.'],
+            ['2','Sauna — 10–15 min','#FF8040','Moderate heat (80–90°C). Heat shock proteins (HSPs) are upregulated — these molecular chaperones actively support muscle protein synthesis and adaptation. Growth hormone spikes significantly post-exercise + heat. Laukkanen\'s Finnish cohort data shows cardiovascular adaptation accumulates here. This is NOT the same as cold immersion — heat is complementary to hypertrophy, not antagonistic.'],
+            ['3','Box Breathing in heat','#FF8040','4–8 cycles of box breathing (4-4-4-4) while in the sauna. The heat increases CO₂ production and mild sympathetic activation — you\'re training your parasympathetic override system under physiological stress. This is the intelligent version of the protocol: the breathing has to work harder in this environment, which builds the capacity faster. Galpin\'s framework: the goal is to create a controlled stress and practice regulating it.'],
+            ['4','Cool down — 5 min','#FF8040','Exit sauna, let temperature normalise. Cold shower is optional but do not submerge in cold water — the goal is temperature normalisation, not cold immersion (which would blunt the heat adaptation you\'ve just accumulated).'],
+          ].map(([n,title,col,desc]) => `
+          <div style="display:flex;gap:12px;">
+            <div style="background:${col};color:var(--bg);font-family:var(--fn-mono);font-size:12px;font-weight:700;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">${n}</div>
+            <div>
+              <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:3px;">${title}</div>
+              <div style="font-size:11px;color:var(--text3);line-height:1.55;">${desc}</div>
+            </div>
+          </div>`).join('')}
+        </div>
+
+        <div style="background:var(--bg);border-radius:var(--r);padding:10px 12px;font-size:11px;color:var(--text3);line-height:1.65;border:.5px solid var(--border);">
+          <strong style="color:var(--gold-l);">Why the combination works:</strong> The sauna creates a controlled physiological stressor. The box breathing trains active regulation of that stress — vagal tone, CO₂ tolerance, parasympathetic override. Done consistently, you are training your nervous system's ability to self-regulate under pressure. This capacity transfers directly to performance: the ability to stay composed under the load of a heavy deadlift, or recover faster between sets. This is Galpin's parasympathetic downregulation framework applied in practice.
+        </div>
+        <div style="font-size:10px;color:var(--text4);margin-top:8px;">Sources: Galpin (parasympathetic downregulation), Laukkanen et al. (Finnish sauna cohort, JAMA Internal Medicine 2015), Roberts et al. (cold vs heat differentiation, J Physiology 2015), Huberman (vagal tone, breathing)</div>
+      </div>`;
+
+    // ── Standard recovery cards (updated) ────────────────────
+    const recoveryCards = [
+      {
+        name: 'Sauna', col: '#FF8040', freq: '3–5× per week — including post-training',
+        source: 'Laukkanen et al. (Finnish studies) · Galpin',
+        points: [
+          'Post-workout sauna is BENEFICIAL — heat shock proteins (HSPs) upregulated by heat actively support muscle adaptation and protein synthesis. This is not the same as cold immersion, which blunts hypertrophy.',
+          'GH spikes significantly from exercise + sauna combination. Laukkanen\'s cohort: 4×/week sauna use associated with dramatically reduced cardiovascular disease risk and all-cause mortality.',
+          'Plasma volume increases over weeks of consistent post-workout sauna use — this is a meaningful cardiovascular adaptation (Scoon et al., 2007).',
+          'Temperature: 80–100°C. Duration: 10–20 min. Exit if heart rate exceeds 150bpm at rest.',
+          'Rehydrate immediately after — you lose significant sodium and fluid. Your electrolytes post-sauna, not just post-training.',
+        ]
+      },
+      {
+        name: 'Sleep', col: '#9B6DFF', freq: '7–9 hours · Consistency is the variable',
+        source: 'Matthew Walker · Andy Galpin · Cheri Mah (Stanford)',
+        points: [
+          'Galpin\'s framing: sleep is not passive recovery — it\'s the primary anabolic window. GH is secreted in pulses during slow-wave sleep. Disrupting sleep duration directly cuts this.',
+          'The two nights after Hades (deadlift sessions) are disproportionately important — CNS demand is highest, and CNS recovery happens exclusively during sleep.',
+          'Cheri Mah\'s Stanford athlete research: sleep extension to 10 hours improved sprint times, reaction time, mood and decreased fatigue in elite athletes. More sleep is almost always better.',
+          'Consistent wake time is the anchor — the circadian clock is set by your wake time, not your sleep time. The 07:00 alarm is more important than what time you went to bed.',
+          'Room: dark, cool (18–19°C), quiet. Magnesium glycinate 30–60 min before bed — supports GABA pathways involved in sleep onset.',
+        ]
+      },
+      {
+        name: 'Cold Exposure', col: '#00C8E8', freq: 'Rest days only if desired — NOT post-training',
+        source: 'Roberts et al. (J Physiology 2015) · Galpin',
+        points: [
+          'CRITICAL DISTINCTION: Cold water immersion (CWI) post-training significantly attenuates hypertrophic adaptation. Roberts et al. 2015 showed meaningfully blunted muscle protein synthesis, satellite cell activity, and long-term gains. This is clear, replicated evidence.',
+          'This is specifically cold water immersion — not sauna, not cool showers, not contrast therapy. Heat post-workout is a different mechanism entirely.',
+          'If you want cold exposure: morning-only or rest days, minimum 4 hours from any training session.',
+          'Galpin\'s position: cold is a useful tool for specific goals (acute inflammation management, mood, mental resilience training) but has no place immediately post-resistance training for a hypertrophy-focused athlete.',
+          'Ice baths for recovery from injury or acute overuse: different context, appropriate. For routine post-training recovery: counterproductive to your goals.',
+        ]
+      },
+      {
+        name: 'Hydration', col: '#00C8E8', freq: '2.5–3L minimum daily · More on training + sauna days',
+        source: 'ISSN position stand · Galpin hydration protocols',
+        points: [
+          'Galpin\'s hydration protocol: body weight in kg × 0.033 = daily litres at minimum. At 81kg: ~2.7L base. Add 500ml per hour of training and 500ml per sauna session.',
+          '500ml with electrolytes immediately on waking — overnight dehydration is real and measurable. Fix it before coffee.',
+          'Sodium is the primary electrolyte for athletic performance. Your Zepp electrolyte serving (650mg) is well-dosed. On sauna days, consider a second serving.',
+          'Urine colour is the reliable real-time marker — pale yellow is the target. Dark yellow means you\'re already behind.',
+          'Dehydration of even 1.5% bodyweight meaningfully impairs strength, power output, and cognitive function. At 81kg that\'s just 1.2kg of fluid loss.',
+        ]
+      },
+      {
+        name: 'Active Recovery', col: '#F0CC70', freq: 'Every rest day — movement, not sedentary',
+        source: 'General sports science · Galpin',
+        points: [
+          'Galpin\'s principle: rest days are not rest — they\'re low-intensity training days for the aerobic and recovery systems.',
+          'Your school run by bike + Tenerife terrain walks are ideal active recovery. Zone 1–2 heart rate (you can hold a conversation). This maintains blood flow to recovering tissue without adding stress.',
+          'Full ROM joint movements on rest days — bodyweight squats, hip hinges, shoulder circles, neck rotations. 5–10 minutes maintains mobility and prevents the restriction patterns that accumulate over time.',
+          'The parasympathetic state on rest days is the target. Sauna, light movement, time outdoors — all support this.',
+          'Galpin: cardiovascular adaptations from training are expressed and compounded on rest days, not during training. Don\'t waste them by being sedentary.',
+        ]
+      },
+    ];
+
+    const standardCards = recoveryCards.map(r => `
+      <div style="background:var(--bg2);border-left:3px solid ${r.col};border-radius:0 var(--r) var(--r) 0;padding:12px 14px;margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;flex-wrap:wrap;gap:4px;">
+          <div style="font-size:13px;font-weight:600;color:${r.col};">${r.name}</div>
+          <div style="font-size:10px;color:var(--text3);font-style:italic;text-align:right;">${r.freq}</div>
+        </div>
+        <div style="font-size:9px;color:var(--text4);margin-bottom:8px;">${r.source}</div>
         <ul class="guide-list">${r.points.map(p=>`<li>${p}</li>`).join('')}</ul>
       </div>`).join('');
+
+    return `
+    <div class="guide-insight">
+      <strong>Primary sources for this section:</strong> Andy Galpin (parasympathetic downregulation, CO₂ tolerance, recovery physiology), Matthew Walker (sleep architecture and athletic performance), Jari Laukkanen et al. (Finnish sauna cohort studies, JAMA Internal Medicine 2015), James Roberts et al. (cold vs heat differentiation, J Physiology 2015), Andrew Huberman / Jack Feldman (breathing mechanisms, Stanford/UCLA), Cheri Mah (sleep extension and athletic performance, Stanford).
+      <br><br>
+      <strong>Corrected from earlier version:</strong> The previous guide stated sauna should not be used within 2 hours of training. This was incorrect — that restriction applies to <em>cold water immersion</em>, which blunts hypertrophy. Heat has a different mechanism and is beneficial post-training.
+    </div>
+
+    <div style="font-size:10px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin:14px 0 8px;">Breathing Protocols</div>
+    ${breathingCards}
+
+    <div style="font-size:10px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin:16px 0 8px;">Post-Training Protocol</div>
+    ${combinedProtocol}
+
+    <div style="font-size:10px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin:16px 0 8px;">Recovery Pillars</div>
+    ${standardCards}`;
   },
 
   morning() {
