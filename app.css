@@ -1511,7 +1511,8 @@ body.workout-active .rest-panel.up {
 .sleep-q-btn.active { background: var(--gold); border-color: var(--gold); color: var(--bg); }
 
 /* ── EDIT MODAL ────────────────────────────────────────────── */
-#edit-modal {
+#edit-modal,
+#calc-modal {
   position: fixed;
   inset: 0;
   z-index: 600;
@@ -1521,7 +1522,8 @@ body.workout-active .rest-panel.up {
   opacity: 0;
   transition: opacity .25s;
 }
-#edit-modal.open { opacity: 1; }
+#edit-modal.open,
+#calc-modal.open { opacity: 1; }
 .edit-backdrop {
   position: absolute;
   inset: 0;
@@ -1540,7 +1542,8 @@ body.workout-active .rest-panel.up {
   transform: translateY(100%);
   transition: transform .28s cubic-bezier(.32,.72,0,1);
 }
-#edit-modal.open .edit-sheet { transform: translateY(0); }
+#edit-modal.open .edit-sheet,
+#calc-modal.open .edit-sheet { transform: translateY(0); }
 .edit-header {
   display: flex;
   justify-content: space-between;
@@ -1646,6 +1649,20 @@ body.workout-active .rest-panel.up {
 .edit-ex-note-inp::placeholder { color: var(--text4); }
 
 /* ── PLATE CALCULATOR ──────────────────────────────────────────── */
+#calc-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 700;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .25s;
+}
+#calc-modal.open { opacity: 1; pointer-events: auto; }
+#calc-modal.open .edit-sheet { transform: translateY(0); }
+
 .calc-sheet { width: min(420px, 100%); }
 .calc-sides-btns { display: flex; gap: 8px; }
 .calc-side-btn {
