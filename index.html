@@ -80,6 +80,17 @@
       </div>
     </div>
 
+    <!-- Minimized active session pill (always present, shown via JS) -->
+    <div id="active-session-bar" class="active-session-bar hidden" onclick="App.maximizeWorkout()" role="button" aria-label="Resume workout">
+      <div class="asb-dot" id="asb-dot"></div>
+      <div class="asb-info">
+        <div class="asb-name" id="asb-name">SESSION</div>
+        <div class="asb-progress" id="asb-progress">0/0 exercises</div>
+      </div>
+      <div class="asb-timer" id="active-bar-timer">00:00:00</div>
+      <div class="asb-expand">▲</div>
+    </div>
+
   </div><!-- #app -->
   <script src="app.js"></script>
 </body>

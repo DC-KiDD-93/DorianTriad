@@ -489,6 +489,23 @@ svg { display: block; }
 }
 .wk-end-btn:hover { border-color: var(--hades); color: var(--hades); }
 
+.wk-min-btn {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  background: transparent;
+  border: 1px solid var(--border2);
+  border-radius: var(--r);
+  color: var(--text3);
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color .15s, color .15s;
+}
+.wk-min-btn:hover { border-color: var(--gold); color: var(--gold); }
+
 /* Exercise scroll */
 .wk-scroll {
   flex: 1;
@@ -738,6 +755,173 @@ svg { display: block; }
   padding: 4px 0 2px 2px;
 }
 
+/* ── PREVIOUS SESSION ("LAST TIME") BOX ──────────────────────── */
+.ex-last-week {
+  margin: 0 14px 0 16px;
+  padding: 9px 11px;
+  background: var(--bg2);
+  border: .5px solid var(--border);
+  border-left: 2px solid var(--session-col, var(--border2));
+  border-radius: var(--r);
+  margin-top: 0;
+}
+.ex-last-week-hdr {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--text4);
+  margin-bottom: 4px;
+}
+.ex-last-week-sets {
+  font-family: var(--fn-mono);
+  font-size: 12px;
+  color: var(--text2);
+  line-height: 1.5;
+}
+.ex-last-week-note {
+  font-size: 11px;
+  color: var(--text3);
+  font-style: italic;
+  margin-top: 5px;
+  line-height: 1.5;
+}
+
+/* Spacing fix — last-week box sits between cues and input section */
+.ex-cues + .ex-last-week,
+.ex-card-top + .ex-last-week,
+.ex-ss-note + .ex-last-week {
+  margin-top: 10px;
+}
+.ex-last-week + .ex-input-section { border-top: none; }
+.ex-last-week {
+  margin-bottom: 10px;
+}
+
+/* ── RECOMMENDED WEIGHT ROW + PLATE CALC TRIGGER ─────────────── */
+.ex-rec-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text2);
+  margin-bottom: 10px;
+}
+.ex-rec-row strong { color: var(--text); font-family: var(--fn-mono); font-weight: 700; }
+.ex-calc-btn {
+  flex-shrink: 0;
+  padding: 6px 10px;
+  background: transparent;
+  border: 1px solid var(--border2);
+  border-radius: var(--r);
+  color: var(--text3);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 32px;
+  transition: border-color .15s, color .15s;
+}
+.ex-calc-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+/* ── PER-SET WEIGHT / REPS / RIR GRID ─────────────────────────── */
+.ex-sets-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.ex-sets-grid-hdr {
+  display: grid;
+  grid-template-columns: 22px 1fr 64px 56px;
+  gap: 6px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--text4);
+  padding: 0 2px;
+}
+.ex-set-row {
+  display: grid;
+  grid-template-columns: 22px 1fr 64px 56px;
+  gap: 6px;
+  align-items: center;
+}
+.ex-set-num {
+  font-family: var(--fn-mono);
+  font-size: 12px;
+  color: var(--text3);
+  text-align: center;
+}
+.ex-set-weight, .ex-set-reps, .ex-set-rir {
+  width: 100%;
+  padding: 10px 6px;
+  background: var(--bg);
+  border: 2px solid var(--border2);
+  border-radius: var(--r);
+  color: var(--text);
+  font-family: var(--fn-mono);
+  font-size: 16px;
+  font-weight: 700;
+  text-align: center;
+  -webkit-appearance: none;
+  appearance: none;
+  transition: border-color .15s;
+  min-height: 46px;
+}
+.ex-set-weight { font-size: 18px; }
+.ex-set-weight:focus, .ex-set-reps:focus, .ex-set-rir:focus {
+  outline: none;
+  border-color: var(--session-col, var(--gold));
+}
+.ex-set-weight.saved, .ex-set-reps.saved, .ex-set-rir.saved { border-color: var(--atlas); }
+.ex-set-reps::placeholder, .ex-set-rir::placeholder { color: var(--text4); font-weight: 400; }
+
+/* ── ACTION ROW — REST TIMER + DONE ───────────────────────────── */
+.ex-action-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ex-action-row .ex-rest-btn { flex: 1; }
+
+/* ── PER-EXERCISE NOTES ────────────────────────────────────────── */
+.ex-notes-section {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: .5px solid var(--border);
+}
+.ex-notes-toggle {
+  background: none;
+  border: none;
+  color: var(--text3);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 0;
+  cursor: pointer;
+  min-height: 32px;
+}
+.ex-notes-toggle:hover { color: var(--gold); }
+.ex-notes-input {
+  width: 100%;
+  margin-top: 6px;
+  padding: 9px 11px;
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: var(--r);
+  color: var(--text2);
+  font-family: var(--fn-body);
+  font-size: 13px;
+  line-height: 1.5;
+  resize: vertical;
+  min-height: 60px;
+  transition: border-color .15s;
+}
+.ex-notes-input:focus { outline: none; border-color: var(--gold); color: var(--text); }
+.ex-notes-input::placeholder { color: var(--text4); }
+.ex-notes-input.hidden { display: none; }
+
 /* Session complete */
 .wk-finish {
   padding: 24px 12px 12px;
@@ -810,6 +994,60 @@ svg { display: block; }
 }
 .rest-actions button:hover { border-color: var(--gold); color: var(--gold); }
 
+/* ── MINIMIZED ACTIVE SESSION BAR ──────────────────────────────── */
+.active-session-bar {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--nav-h) + var(--safe-b));
+  transform: translateX(-50%);
+  width: min(520px, calc(100% - 16px));
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--surf2);
+  border: 1px solid var(--border2);
+  border-bottom: none;
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+  padding: 10px 14px;
+  z-index: 450;
+  box-shadow: 0 -4px 20px rgba(0,0,0,.4);
+  cursor: pointer;
+  transition: transform .2s;
+}
+.active-session-bar.hidden { display: none; }
+.active-session-bar:active { transform: translateX(-50%) scale(.98); }
+.asb-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 8px currentColor;
+  animation: asbPulse 2s ease-in-out infinite;
+}
+@keyframes asbPulse { 0%,100% { opacity: 1; } 50% { opacity: .4; } }
+.asb-info { flex: 1; min-width: 0; }
+.asb-name {
+  font-family: var(--fn-head);
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: .06em;
+  line-height: 1.2;
+}
+.asb-progress { font-size: 10px; color: var(--text3); }
+.asb-timer {
+  font-family: var(--fn-mono);
+  font-size: 14px;
+  color: var(--gold);
+  letter-spacing: .03em;
+  flex-shrink: 0;
+}
+.asb-expand { color: var(--text3); font-size: 11px; flex-shrink: 0; }
+
+/* When the active session bar is visible, shift the rest panel up
+   so the two don't overlap. */
+body.has-active-bar .rest-panel.up {
+  bottom: calc(var(--nav-h) + var(--safe-b) + 62px);
+}
+
 /* ── LOG TAB ────────────────────────────────────────────────── */
 .log-week { margin-bottom: 6px; }
 .log-week-hdr {
@@ -853,6 +1091,21 @@ svg { display: block; }
 .log-ex-row:last-child { border-bottom: none; }
 .log-ex-name { flex: 1; font-size: 12px; color: var(--text2); }
 .log-ex-wt { font-family: var(--fn-mono); font-size: 13px; font-weight: 600; }
+.log-ex-sets {
+  font-family: var(--fn-mono);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: right;
+  white-space: nowrap;
+}
+.log-ex-note {
+  font-size: 11px;
+  color: var(--text3);
+  font-style: italic;
+  padding: 0 16px 8px 16px;
+  margin-top: -4px;
+  line-height: 1.5;
+}
 
 .log-empty { text-align: center; padding: 60px 24px; color: var(--text3); line-height: 1.8; }
 .log-empty p { font-size: 14px; margin-bottom: 8px; }
@@ -1331,7 +1584,105 @@ body.workout-active .rest-panel.up {
   border-bottom: .5px solid var(--border);
   gap: 10px;
 }
-.edit-ex-name { font-size: 13px; color: var(--text2); flex: 1; }
+.edit-ex-name { font-size: 13px; color: var(--text2); flex: 1; font-weight: 600; margin-bottom: 6px; }
+
+/* New-format (sets/reps/RIR) exercise editor block */
+.edit-ex-block {
+  padding: 10px 0;
+  border-bottom: .5px solid var(--border);
+}
+.edit-sets-grid-hdr {
+  display: grid;
+  grid-template-columns: 18px 1fr 1fr 1fr;
+  gap: 6px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--text4);
+  padding: 0 2px 4px;
+}
+.edit-set-row {
+  display: grid;
+  grid-template-columns: 18px 1fr 1fr 1fr;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.edit-set-num {
+  font-family: var(--fn-mono);
+  font-size: 11px;
+  color: var(--text3);
+  text-align: center;
+  align-self: center;
+}
+.edit-set-inp {
+  width: 100%;
+  padding: 7px 6px;
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  border-radius: var(--r);
+  color: var(--text);
+  font-family: var(--fn-mono);
+  font-size: 14px;
+  text-align: center;
+}
+.edit-set-inp:focus { outline: none; border-color: var(--gold); }
+.edit-set-inp::placeholder { color: var(--text4); font-size: 11px; }
+.edit-ex-note-inp {
+  width: 100%;
+  margin-top: 4px;
+  padding: 7px 9px;
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: var(--r);
+  color: var(--text2);
+  font-family: var(--fn-body);
+  font-size: 12px;
+  line-height: 1.4;
+  resize: vertical;
+  min-height: 36px;
+}
+.edit-ex-note-inp:focus { outline: none; border-color: var(--gold); color: var(--text); }
+.edit-ex-note-inp::placeholder { color: var(--text4); }
+
+/* ── PLATE CALCULATOR ──────────────────────────────────────────── */
+.calc-sheet { width: min(420px, 100%); }
+.calc-sides-btns { display: flex; gap: 8px; }
+.calc-side-btn {
+  flex: 1;
+  padding: 9px;
+  background: transparent;
+  border: 1px solid var(--border2);
+  border-radius: var(--r);
+  color: var(--text3);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 40px;
+  transition: all .15s;
+}
+.calc-side-btn.active { background: var(--gold); border-color: var(--gold); color: var(--bg); }
+.calc-result {
+  margin-top: 16px;
+  padding: 16px;
+  background: var(--bg2);
+  border-radius: var(--r-lg);
+  text-align: center;
+}
+.calc-result-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 6px;
+}
+.calc-result-val {
+  font-family: var(--fn-mono);
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--gold);
+}
 
 /* ── UTILITY ─────────────────────────────────────────────────── */
 .mt-4  { margin-top: 4px; }

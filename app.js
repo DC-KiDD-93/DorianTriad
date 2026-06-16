@@ -239,9 +239,10 @@ const GUIDE = {
 
 const Store = {
   KEY: 'dt_v2',
+  ACTIVE_KEY: 'dt_active_v1',
 
   defaults() {
-    return { v:2, profile:{ bodyweight:81, targetWeight:90, targetBF:14 },
+    return { v:2, profile:{ bodyweight:81, targetWeight:90, targetBF:14, machineBase:{} },
              bwLog:[], sessions:[], exerciseLog:{}, sleepLog:[] };
   },
 
@@ -253,6 +254,55 @@ const Store = {
   set(data) {
     try { localStorage.setItem(this.KEY, JSON.stringify(data)); }
     catch(e) { console.warn('Storage:', e); }
+  },
+
+  // ── Active (in-progress) session — survives backgrounding/reload ──
+  getActiveSession() {
+    try { return JSON.parse(localStorage.getItem(this.ACTIVE_KEY)); }
+    catch(_) { return null; }
+  },
+  setActiveSession(state) {
+    try { localStorage.setItem(this.ACTIVE_KEY, JSON.stringify(state)); }
+    catch(e) { console.warn('Active session save failed:', e); }
+  },
+  clearActiveSession() {
+    try { localStorage.removeItem(this.ACTIVE_KEY); } catch(_) {}
+  },
+
+  // ── Previous per-exercise note — for "last time" context during a session ──
+  getLastExerciseNote(exId) {
+    const d = this.get();
+    for (const s of d.sessions) {
+      const ex = (s.exercises || []).find(e => e.exId === exId);
+      if (ex && ex.notes && ex.notes.trim()) {
+        return { note: ex.notes.trim(), date: s.date };
+      }
+    }
+    return null;
+  },
+
+  // ── Most recent logged entry for an exercise (any session) ──
+  // Returns { exId, sets, notes, date } for new-format entries, or
+  // { exId, weight, date } for old-format entries, or null.
+  getLastExerciseEntry(exId) {
+    const d = this.get();
+    for (const s of d.sessions) {
+      const ex = (s.exercises || []).find(e => e.exId === exId);
+      if (ex) return { ...ex, date: s.date };
+    }
+    return null;
+  },
+
+  // ── Machine base weight (plate calculator) — remembered per exercise ──
+  getMachineBase(exId) {
+    const d = this.get();
+    return (d.profile.machineBase && d.profile.machineBase[exId]) || 0;
+  },
+  setMachineBase(exId, base) {
+    const d = this.get();
+    if (!d.profile.machineBase) d.profile.machineBase = {};
+    d.profile.machineBase[exId] = base;
+    this.set(d);
   },
 
   // ── Bodyweight ──────────────────────────────────────────
@@ -337,23 +387,30 @@ const Store = {
   },
 
   // ── Sessions ────────────────────────────────────────────
-  saveSession(sessionId, durationSecs, exerciseWeights, notes) {
+  // exerciseData: [{ exId, sets:[{weight,reps,rir}], notes }]
+  // For exerciseLog (charts/standards/recommendations) we record the
+  // heaviest non-empty set weight as "the" weight for that session.
+  saveSession(sessionId, durationSecs, exerciseData, notes) {
     // Single read-modify-write — avoids the overwrite race condition
     const d = this.get();
     const sess = {
       id: `s_${Date.now()}`, sessionId,
       date: todayStr(), week: weekKey(new Date()),
-      duration: durationSecs, exercises: exerciseWeights,
+      duration: durationSecs, exercises: exerciseData,
       notes: notes || ''
     };
     d.sessions.unshift(sess);
     const now = Date.now();
-    exerciseWeights.forEach(({ exId, weight }) => {
-      if (!weight || isNaN(+weight)) return;
+    exerciseData.forEach(({ exId, sets }) => {
+      const weights = (sets || [])
+        .map(s => parseFloat(s.weight))
+        .filter(w => !isNaN(w) && w > 0);
+      if (!weights.length) return;
+      const top = Math.max(...weights);
       if (!d.exerciseLog[exId]) d.exerciseLog[exId] = [];
       d.exerciseLog[exId].push({
         ts: now, date: todayStr(), week: weekKey(new Date()),
-        weight: +parseFloat(weight).toFixed(2)
+        weight: +parseFloat(top).toFixed(2)
       });
     });
     this.set(d);
@@ -483,6 +540,22 @@ function fmtDate(str) {
   return new Date(str+'T12:00:00').toLocaleDateString('en-IE',{weekday:'short',day:'numeric',month:'short'});
 }
 
+// ── Set/reps helpers for workout inputs ──────────────────────
+// "3" -> 3, "2-3" -> 3 (use the higher figure so all possible rows are available)
+function parseSetCount(setsStr) {
+  const nums = String(setsStr).match(/\d+/g);
+  if (!nums) return 3;
+  return Math.max(...nums.map(Number));
+}
+
+// "6-8" -> 7, "12-20" -> 16, "10" -> 10 — used as a reps placeholder (nominal target)
+function repsNominal(repsStr) {
+  const nums = String(repsStr).match(/\d+/g);
+  if (!nums) return '';
+  if (nums.length === 1) return nums[0];
+  return Math.round((+nums[0] + +nums[1]) / 2);
+}
+
 // ── Audio — one shared AudioContext, unlocked on first user tap.
 // Creating a fresh AudioContext per beep is unreliable in Chrome (gets suspended).
 let _AC = null;
@@ -536,14 +609,26 @@ function el(id) { return document.getElementById(id); }
 
 const SessionTimer = {
   _start: null, _iv: null,
-  start() {
-    this._start = Date.now();
-    this._iv = setInterval(() => {
-      const d = el('wk-timer');
-      if (d) d.textContent = fmtClock(Math.floor((Date.now()-this._start)/1000));
-    }, 1000);
+
+  start(startTs) {
+    this._start = startTs || Date.now();
+    this._tick();
+    clearInterval(this._iv);
+    this._iv = setInterval(() => this._tick(), 1000);
   },
-  stop() { clearInterval(this._iv); this._iv = null; },
+
+  _tick() {
+    const secs = this.elapsed();
+    const wkEl = el('wk-timer');
+    if (wkEl) wkEl.textContent = fmtClock(secs);
+    const barEl = el('active-bar-timer');
+    if (barEl) barEl.textContent = fmtClock(secs);
+  },
+
+  stop() { clearInterval(this._iv); this._iv = null; this._start = null; },
+
+  // Timestamp-based — always correct even if the tab was backgrounded
+  // and JS timers were suspended for a while.
   elapsed() { return this._start ? Math.floor((Date.now()-this._start)/1000) : 0; }
 };
 
@@ -552,38 +637,59 @@ const SessionTimer = {
 // ════════════════════════════════════════════════════════════
 
 const RestTimer = {
-  _total:0, _left:0, _iv:null,
+  _endTs: 0, _total: 0, _label: '', _iv: null, _lastLeft: null,
 
   start(seconds, label) {
-    clearInterval(this._iv);
-    this._total = seconds; this._left = seconds;
     unlockAudio(); // Unlock audio context on user tap (required by Chrome)
-    const panel=el('rest-panel'), cnt=el('rest-count'), fill=el('rest-fill'), lbl=el('rest-label');
-    if (!panel) return;
-    if (lbl) lbl.textContent = label || 'Rest';
-    panel.classList.remove('alarm');
-    panel.classList.add('up');
+    clearInterval(this._iv);
+    this._total = seconds;
+    this._endTs = Date.now() + seconds * 1000;
+    this._label = label || 'Rest';
+    this._lastLeft = null;
+    this._show();
     vib(40);
-    if (cnt) { cnt.textContent = fmtRest(this._left); cnt.classList.remove('ending'); }
-    if (fill) { fill.style.width='0%'; fill.classList.remove('ending'); }
     this._iv = setInterval(() => this._tick(), 1000);
+    this._tick();
+    WorkoutMode.persist();
+  },
+
+  // Restore an in-progress rest timer after the app was reloaded/backgrounded.
+  // If it already finished while we were away, just clear it quietly.
+  resume(endTs, total, label) {
+    if (endTs <= Date.now()) { WorkoutMode.persist({ rest: null }); return; }
+    clearInterval(this._iv);
+    this._endTs = endTs; this._total = total; this._label = label || 'Rest';
+    this._lastLeft = null;
+    this._show();
+    this._iv = setInterval(() => this._tick(), 1000);
+    this._tick();
+  },
+
+  _show() {
+    const panel = el('rest-panel'), lbl = el('rest-label');
+    if (lbl) lbl.textContent = this._label;
+    panel?.classList.remove('alarm');
+    panel?.classList.add('up');
   },
 
   _tick() {
-    this._left = Math.max(0, this._left-1);
-    const pct = ((this._total-this._left)/this._total)*100;
-    const cnt=el('rest-count'), fill=el('rest-fill'), panel=el('rest-panel');
-    if (cnt) { cnt.textContent = fmtRest(this._left); cnt.classList.toggle('ending', this._left<=10); }
-    if (fill) { fill.style.width=pct+'%'; fill.classList.toggle('ending', this._left<=10); }
+    const left = Math.max(0, Math.ceil((this._endTs - Date.now()) / 1000));
+    if (left === this._lastLeft) return;
+    this._lastLeft = left;
+
+    const pct = Math.min(100, ((this._total - left) / this._total) * 100);
+    const cnt = el('rest-count'), fill = el('rest-fill'), panel = el('rest-panel');
+    if (cnt)  { cnt.textContent = fmtRest(left); cnt.classList.toggle('ending', left <= 10 && left > 0); }
+    if (fill) { fill.style.width = pct + '%'; fill.classList.toggle('ending', left <= 10 && left > 0); }
 
     // Warning pulses at 10s and 5s remaining
-    if (this._left === 10) { vib(80); beepShort(); }
-    if (this._left === 5)  { vib([60,40,60]); beepShort(); }
+    if (left === 10) { vib(80); beepShort(); }
+    if (left === 5)  { vib([60,40,60]); beepShort(); }
 
-    if (this._left<=0) {
-      clearInterval(this._iv);
+    if (left <= 0) {
+      clearInterval(this._iv); this._iv = null;
       beep();
-      vib([300,100,300,100,300]); // More aggressive 3-pulse pattern
+      vib([300,100,300,100,300]); // Aggressive 3-pulse pattern
       if (panel) panel.classList.add('alarm');
       // Full-screen flash overlay
       const flash = document.createElement('div');
@@ -591,18 +697,23 @@ const RestTimer = {
       document.body.appendChild(flash);
       setTimeout(() => flash.remove(), 1200);
       setTimeout(() => this.dismiss(), 3000);
+      WorkoutMode.persist({ rest: null });
     }
   },
 
   dismiss() {
-    clearInterval(this._iv);
+    clearInterval(this._iv); this._iv = null;
     const p = el('rest-panel');
-    if (p) p.classList.remove('up');
+    if (p) p.classList.remove('up', 'alarm');
+    WorkoutMode.persist({ rest: null });
   },
 
   add(n) {
-    this._left += n; this._total += n;
-    const cnt=el('rest-count'); if(cnt) cnt.textContent = fmtRest(this._left);
+    this._endTs += n * 1000;
+    this._total += n;
+    this._lastLeft = null;
+    this._tick();
+    WorkoutMode.persist();
   }
 };
 
@@ -959,13 +1070,35 @@ const Views = {
       const sessions = groups[wk];
       const sessHtml = sessions.map(s => {
         const sess = SESSIONS[s.sessionId];
-        const exHtml = (s.exercises||[]).filter(e=>e.weight).map(e=>{
+        const exHtml = (s.exercises||[]).map(e=>{
           const exData = sess.exercises.find(x=>x.id===e.exId);
-          return `<div class="log-ex-row">
-            <span class="log-ex-name">${exData?exData.name:e.exId}</span>
-            <span class="log-ex-wt" style="color:${sess.color};">${e.weight}kg</span>
-          </div>`;
-        }).join('');
+          const name = exData ? exData.name : e.exId;
+
+          if (e.sets) {
+            // New format: per-set weight/reps/RIR + optional per-exercise note
+            const setsStr = e.sets
+              .filter(st => st.weight !== null && st.weight !== '' && st.weight !== undefined)
+              .map(st => {
+                let txt = `${st.weight}kg`;
+                if (st.reps !== null && st.reps !== '' && st.reps !== undefined) txt += `×${st.reps}`;
+                if (st.rir  !== null && st.rir  !== '' && st.rir  !== undefined) txt += `@${st.rir}`;
+                return txt;
+              }).join(', ');
+            if (!setsStr && !e.notes) return '';
+            const noteHtml = e.notes ? `<div class="log-ex-note">${e.notes}</div>` : '';
+            return `<div class="log-ex-row">
+              <span class="log-ex-name">${name}</span>
+              <span class="log-ex-sets" style="color:${sess.color};">${setsStr || '—'}</span>
+            </div>${noteHtml}`;
+          } else {
+            // Old format: single weight value
+            if (!e.weight) return '';
+            return `<div class="log-ex-row">
+              <span class="log-ex-name">${name}</span>
+              <span class="log-ex-wt" style="color:${sess.color};">${e.weight}kg</span>
+            </div>`;
+          }
+        }).filter(Boolean).join('');
         const notesHtml = s.notes
           ? `<div class="log-session-notes">${s.notes}</div>` : '';
         return `
@@ -1251,24 +1384,128 @@ const Views = {
 
 const WorkoutMode = {
   sessionId: null,
-  pendingWeights: {},
+  _minimized: false,
+  _persistTimer: null,
 
+  // ── Entry point — called from App.startWorkout(sessionId) ─────
   enter(sessionId) {
-    this.sessionId = sessionId;
-    this.pendingWeights = {};
-    const s = SESSIONS[sessionId];
-    const overlay = el('workout-overlay');
-    overlay.innerHTML = this._buildHTML(s);
-    overlay.classList.remove('hidden');
-    requestAnimationFrame(() => overlay.classList.add('open'));
-    SessionTimer.start();
-    document.body.style.overflow = 'hidden';
-    document.body.classList.add('workout-active');
+    const active = Store.getActiveSession();
+
+    if (active && active.sessionId === sessionId) {
+      this._restore(active);
+      return;
+    }
+    if (active && active.sessionId !== sessionId) {
+      const sessName = SESSIONS[active.sessionId]?.name || active.sessionId;
+      const elapsedMin = Math.max(1, Math.round((Date.now() - active.startTs) / 60000));
+      const wantsResume = confirm(
+        `You have an unfinished ${sessName} session (${elapsedMin} min elapsed).\n\n` +
+        `OK = Resume ${sessName}\nCancel = Discard it and start ${SESSIONS[sessionId].name}`
+      );
+      if (wantsResume) { this._restore(active); return; }
+      Store.clearActiveSession();
+    }
+    this._startFresh(sessionId);
   },
 
-  exit() {
+  _startFresh(sessionId) {
+    this.sessionId = sessionId;
+    this._minimized = false;
+    const s = SESSIONS[sessionId];
+    const overlay = el('workout-overlay');
+    overlay.innerHTML = this._buildHTML(s, null);
+    overlay.classList.remove('hidden');
+    requestAnimationFrame(() => overlay.classList.add('open'));
+    SessionTimer.start(Date.now());
+    document.body.style.overflow = 'hidden';
+    document.body.classList.add('workout-active');
+    this._hideBar();
+    this.persist();
+  },
+
+  // ── Restore from a persisted active session (resume or reload) ──
+  _restore(active) {
+    this.sessionId = active.sessionId;
+    this._minimized = !!active.minimized;
+    const s = SESSIONS[active.sessionId];
+    const overlay = el('workout-overlay');
+    overlay.innerHTML = this._buildHTML(s, active);
+    overlay.classList.remove('hidden');
+    SessionTimer.start(active.startTs);
+
+    if (active.rest && active.rest.endTs) {
+      RestTimer.resume(active.rest.endTs, active.rest.total, active.rest.label);
+    }
+
+    if (this._minimized) {
+      overlay.classList.remove('open');
+      document.body.classList.remove('workout-active');
+      document.body.style.overflow = '';
+      this._showBar();
+    } else {
+      requestAnimationFrame(() => overlay.classList.add('open'));
+      document.body.classList.add('workout-active');
+      document.body.style.overflow = 'hidden';
+      this._hideBar();
+    }
+    this.updateProgress();
+  },
+
+  // ── Minimize / maximize — keep the session alive in the background ──
+  minimize() {
+    this.persist({ minimized: true });
+    const overlay = el('workout-overlay');
+    overlay.classList.remove('open');
+    document.body.classList.remove('workout-active');
+    document.body.style.overflow = '';
+    this._minimized = true;
+    this._showBar();
+  },
+
+  maximize() {
+    const overlay = el('workout-overlay');
+    overlay.classList.remove('hidden');
+    requestAnimationFrame(() => overlay.classList.add('open'));
+    document.body.classList.add('workout-active');
+    document.body.style.overflow = 'hidden';
+    this._minimized = false;
+    this._hideBar();
+    this.persist({ minimized: false });
+  },
+
+  _showBar() {
+    const bar = el('active-session-bar');
+    if (!bar || !this.sessionId) return;
+    const s = SESSIONS[this.sessionId];
+    el('asb-dot').style.background = s.color;
+    el('asb-name').textContent = s.name;
+    el('asb-name').style.color = s.color;
+    this.updateProgress();
+    bar.classList.remove('hidden');
+    document.body.classList.add('has-active-bar');
+    SessionTimer._tick();
+  },
+
+  _hideBar() {
+    el('active-session-bar')?.classList.add('hidden');
+    document.body.classList.remove('has-active-bar');
+  },
+
+  // ── Discard — abandon the session entirely, no save ──────────
+  discard() {
+    if (!confirm('Discard this session? Everything entered will be lost.')) return;
+    this._teardown();
+  },
+
+  // ── Finish — called after App.finishSession() has saved ──────
+  finish() {
+    this._teardown();
+  },
+
+  _teardown() {
     SessionTimer.stop();
     RestTimer.dismiss();
+    Store.clearActiveSession();
     const overlay = el('workout-overlay');
     overlay.classList.remove('open');
     setTimeout(() => {
@@ -1277,11 +1514,53 @@ const WorkoutMode = {
     }, 320);
     document.body.style.overflow = '';
     document.body.classList.remove('workout-active');
+    this._hideBar();
     this.sessionId = null;
-    this.pendingWeights = {};
+    this._minimized = false;
   },
 
-  _buildHTML(s) {
+  // ── Persistence — write current DOM state to localStorage ────
+  // Called on every meaningful change so the session survives the
+  // app being minimised, backgrounded, or fully reloaded by the OS.
+  persist(overrides = {}) {
+    if (!this.sessionId) return;
+    const exerciseData = {};
+    el('workout-overlay')?.querySelectorAll('.ex-card').forEach(card => {
+      const exId = card.getAttribute('data-ex-id');
+      const sets = Array.from(card.querySelectorAll('.ex-set-row')).map(row => ({
+        weight: row.querySelector('.ex-set-weight')?.value ?? '',
+        reps:   row.querySelector('.ex-set-reps')?.value ?? '',
+        rir:    row.querySelector('.ex-set-rir')?.value ?? '',
+      }));
+      exerciseData[exId] = {
+        sets,
+        notes: card.querySelector('.ex-notes-input')?.value ?? '',
+        done: card.classList.contains('done')
+      };
+    });
+
+    const state = {
+      sessionId: this.sessionId,
+      startTs: SessionTimer._start || Date.now(),
+      minimized: this._minimized,
+      sessionNotes: el('session-notes-input')?.value ?? '',
+      rest: RestTimer._iv
+        ? { endTs: RestTimer._endTs, total: RestTimer._total, label: RestTimer._label }
+        : null,
+      exerciseData,
+      ...overrides
+    };
+    Store.setActiveSession(state);
+  },
+
+  persistDebounced() {
+    clearTimeout(this._persistTimer);
+    this._persistTimer = setTimeout(() => this.persist(), 400);
+  },
+
+  // ── Build the workout overlay HTML ────────────────────────────
+  // `active` is the restored state (or null for a fresh session).
+  _buildHTML(s, active) {
     const warmupHtml = s.warmup.map((step,i)=>
       `<div class="warmup-step"><div class="warmup-step-num">${i+1}</div><div>${step}</div></div>`
     ).join('');
@@ -1289,11 +1568,11 @@ const WorkoutMode = {
     const exHtml = s.exercises.map(ex => {
       const last = Store.lastWeight(ex.id);
       const rec  = Store.recommended(ex.id, ex.incrPct);
-      const prevTxt = rec && last
-        ? `Last: ${last}kg &nbsp;→&nbsp; Rec: ${rec}kg`
-        : rec ? `Recommended: ${rec}kg`
-        : last ? `Last session: ${last}kg`
-        : 'First session — establish baseline';
+      const recOrLast = rec !== null ? rec : last;
+      const setCount = parseSetCount(ex.sets);
+      const repsPh = repsNominal(ex.reps);
+      const saved = active?.exerciseData?.[ex.id];
+      const isDone = !!saved?.done;
 
       const badgeHtml = ex.isAnchor
         ? `<span class="badge badge-gold">★</span>`
@@ -1305,8 +1584,66 @@ const WorkoutMode = {
         ? `<button class="ex-rest-btn" onclick="App.startRest(${ex.restSecs},'${ex.name}')">⏱ ${fmtRest(ex.restSecs)}</button>`
         : `<span class="ex-rest-btn ss">→ Superset</span>`;
 
+      // ── Previous session summary for this exercise ──────────
+      const lastEntry = Store.getLastExerciseEntry(ex.id);
+      let lastWeekHtml = '';
+      if (lastEntry) {
+        let setsSummary;
+        if (lastEntry.sets && lastEntry.sets.length) {
+          setsSummary = lastEntry.sets
+            .filter(st => st.weight !== null && st.weight !== '' && st.weight !== undefined)
+            .map(st => {
+              let txt = `${st.weight}kg`;
+              if (st.reps !== null && st.reps !== '' && st.reps !== undefined) txt += `×${st.reps}`;
+              if (st.rir !== null && st.rir !== '' && st.rir !== undefined) txt += ` @${st.rir}`;
+              return txt;
+            }).join('&nbsp;&nbsp;·&nbsp;&nbsp;');
+        } else if (lastEntry.weight !== undefined && lastEntry.weight !== null) {
+          setsSummary = `${lastEntry.weight}kg`;
+        }
+        const noteHtml = lastEntry.notes
+          ? `<div class="ex-last-week-note">"${lastEntry.notes}"</div>` : '';
+        if (setsSummary) {
+          lastWeekHtml = `
+          <div class="ex-last-week">
+            <div class="ex-last-week-hdr">Last time — ${fmtDate(lastEntry.date)}</div>
+            <div class="ex-last-week-sets">${setsSummary}</div>
+            ${noteHtml}
+          </div>`;
+        }
+      }
+
+      // ── Per-set rows: weight / reps / RIR ─────────────────────
+      const setRows = Array.from({ length: setCount }).map((_, i) => {
+        const savedSet = saved?.sets?.[i];
+        const weightVal = savedSet?.weight !== undefined && savedSet?.weight !== ''
+          ? savedSet.weight
+          : (recOrLast !== null ? recOrLast : '');
+        const repsVal = savedSet?.reps ?? '';
+        const rirVal  = savedSet?.rir ?? '';
+        return `
+        <div class="ex-set-row">
+          <div class="ex-set-num">${i+1}</div>
+          <input class="ex-set-weight" type="number" inputmode="decimal" step="0.5" min="0"
+            placeholder="kg" value="${weightVal}"
+            data-ex-id="${ex.id}" data-set-idx="${i}" data-field="weight"
+            onchange="App.handleSetInput(this)" onblur="App.handleSetInput(this)">
+          <input class="ex-set-reps" type="number" inputmode="numeric" min="0"
+            placeholder="${repsPh}" value="${repsVal}"
+            data-ex-id="${ex.id}" data-set-idx="${i}" data-field="reps"
+            onchange="App.handleSetInput(this)" onblur="App.handleSetInput(this)">
+          <input class="ex-set-rir" type="number" inputmode="numeric" min="0" max="5"
+            placeholder="1" value="${rirVal}"
+            data-ex-id="${ex.id}" data-set-idx="${i}" data-field="rir"
+            onchange="App.handleSetInput(this)" onblur="App.handleSetInput(this)">
+        </div>`;
+      }).join('');
+
+      const exNotesVal = saved?.notes ?? '';
+      const notesToggleLabel = exNotesVal.trim() ? '✎ Edit note' : '✎ Add note';
+
       return `
-      <div class="ex-card" data-ex-id="${ex.id}" data-anchor="${ex.isAnchor}" style="--session-col:${s.color};">
+      <div class="ex-card ${isDone ? 'done' : ''}" data-ex-id="${ex.id}" data-anchor="${ex.isAnchor}" style="--session-col:${s.color};">
         <div class="ex-card-top">
           <button class="ex-card-name-btn" onclick="App.toggleCues(this)">
             <div class="ex-card-name">${ex.name}${badgeHtml}</div>
@@ -1316,28 +1653,32 @@ const WorkoutMode = {
         </div>
         ${ssNoteHtml}
         <ul class="ex-cues hidden">${cuesHtml}</ul>
+
+        ${lastWeekHtml}
+
         <div class="ex-input-section">
-          <div class="ex-prev-row">${prevTxt}</div>
-          <div class="ex-input-row">
-            <div class="ex-weight-wrap">
-              <input class="ex-weight-input"
-                type="number"
-                inputmode="decimal"
-                placeholder="0"
-                step="0.5"
-                min="0"
-                value="${rec !== null ? rec : (last !== null ? last : '')}"
-                data-ex-id="${ex.id}"
-                onchange="App.handleWeight(this)"
-                onblur="App.handleWeight(this)">
-              <span class="ex-kg">kg</span>
-            </div>
-            <div class="ex-btns">
-              ${restBtnHtml}
-              <button class="ex-done-btn" onclick="App.markDone(this)" aria-label="Mark done">✓</button>
-            </div>
+          <div class="ex-rec-row">
+            <span>${rec !== null ? `Recommended: <strong>${rec}kg</strong>` : last !== null ? `Last: <strong>${last}kg</strong>` : 'First session — establish baseline'}</span>
+            <button class="ex-calc-btn" onclick="App.openPlateCalc('${ex.id}')" type="button">⚖ Plates</button>
           </div>
-          ${ex.incrPct ? `<div class="ex-incr-lbl">+${ex.incrPct}% / session when top rep reached</div>` : ''}
+          <div class="ex-sets-grid">
+            <div class="ex-sets-grid-hdr">
+              <div></div><div>Weight (kg)</div><div>Reps</div><div>RIR</div>
+            </div>
+            ${setRows}
+          </div>
+          <div class="ex-action-row">
+            ${restBtnHtml}
+            <button class="ex-done-btn" onclick="App.markDone(this)" aria-label="Mark done">${isDone ? '✓' : '○'}</button>
+          </div>
+          ${ex.incrPct ? `<div class="ex-incr-lbl">+${ex.incrPct}% / session when top rep reached · blank reps/RIR = nominal target</div>` : ''}
+        </div>
+
+        <div class="ex-notes-section">
+          <button class="ex-notes-toggle" onclick="App.toggleExNotes(this)" type="button">${notesToggleLabel}</button>
+          <textarea class="ex-notes-input ${exNotesVal.trim() ? '' : 'hidden'}" data-ex-id="${ex.id}"
+            placeholder="Note for this exercise — technique, how it felt, anything to remember next time…"
+            oninput="App.handleExNote(this)">${exNotesVal}</textarea>
         </div>
       </div>`;
     }).join('');
@@ -1348,12 +1689,15 @@ const WorkoutMode = {
       `<button class="wk-rest-preset" onclick="App.startRest(${secs},'Rest')">${lbl}</button>`
     ).join('');
 
+    const sessionNotesVal = active?.sessionNotes ?? '';
+
     return `
     <div class="wk-header" style="border-bottom-color:${s.color}50;">
+      <button class="wk-min-btn" onclick="App.minimizeWorkout()" aria-label="Minimize" title="Minimize — keep session running">︾</button>
       <div class="wk-session-name" style="color:${s.color};">${s.name}</div>
       <div class="wk-timer" id="wk-timer">00:00:00</div>
       <div class="wk-progress" id="wk-progress">0/${s.exercises.length}</div>
-      <button class="wk-end-btn" onclick="App.exitWorkout()">End</button>
+      <button class="wk-end-btn" onclick="App.discardWorkout()" aria-label="Discard" title="Discard session">✕</button>
     </div>
     <div class="wk-rest-bar">
       <div class="wk-rest-bar-label">Rest</div>
@@ -1372,7 +1716,8 @@ const WorkoutMode = {
         <div class="wk-notes-wrap">
           <textarea id="session-notes-input" class="wk-notes-input"
             placeholder="Session notes… how it felt, anything notable, sleep quality, energy level"
-            rows="3"></textarea>
+            oninput="App.handleSessionNote(this)"
+            rows="3">${sessionNotesVal}</textarea>
         </div>
         <button class="wk-finish-btn" onclick="App.finishSession()">Complete Session</button>
       </div>
@@ -1384,14 +1729,29 @@ const WorkoutMode = {
     const total = SESSIONS[this.sessionId]?.exercises.length || 0;
     const p = el('wk-progress');
     if (p) p.textContent = `${done}/${total}`;
+    const bp = el('asb-progress');
+    if (bp) bp.textContent = `${done}/${total} exercises`;
   },
 
-  collectWeights() {
-    const inputs = el('workout-overlay')?.querySelectorAll('.ex-weight-input') || [];
-    return Array.from(inputs).map(inp => ({
-      exId: inp.getAttribute('data-ex-id'),
-      weight: inp.value ? parseFloat(inp.value) : null
-    }));
+  // ── Collect final exercise data for saving to history ─────────
+  // Returns [{ exId, sets:[{weight,reps,rir}], notes }]
+  collectExerciseData() {
+    const cards = el('workout-overlay')?.querySelectorAll('.ex-card') || [];
+    return Array.from(cards).map(card => {
+      const exId = card.getAttribute('data-ex-id');
+      const sets = Array.from(card.querySelectorAll('.ex-set-row')).map(row => {
+        const w   = row.querySelector('.ex-set-weight')?.value;
+        const r   = row.querySelector('.ex-set-reps')?.value;
+        const rir = row.querySelector('.ex-set-rir')?.value;
+        return {
+          weight: (w !== '' && w != null) ? parseFloat(w) : null,
+          reps:   (r !== '' && r != null) ? parseInt(r, 10) : null,
+          rir:    (rir !== '' && rir != null) ? parseInt(rir, 10) : null,
+        };
+      });
+      const notes = card.querySelector('.ex-notes-input')?.value.trim() || '';
+      return { exId, sets, notes };
+    });
   }
 };
 
@@ -2007,21 +2367,19 @@ const App = {
     WorkoutMode.enter(sessionId);
   },
 
-  exitWorkout() {
-    if (confirm('End session without saving?')) {
-      WorkoutMode.exit();
-    }
-  },
+  minimizeWorkout() { WorkoutMode.minimize(); },
+  maximizeWorkout() { WorkoutMode.maximize(); },
+  discardWorkout()  { WorkoutMode.discard(); },
 
   finishSession() {
     const secs = SessionTimer.elapsed();
-    const weights = WorkoutMode.collectWeights();
-    const logged = weights.filter(w => w.weight).length;
+    const exData = WorkoutMode.collectExerciseData();
+    const logged = exData.filter(e => e.sets.some(st => st.weight !== null)).length;
     const notes = (el('session-notes-input')?.value || '').trim();
     const dur = fmtDur(secs);
-    if (confirm(`Session complete ✓\nDuration: ${dur}\nExercises logged: ${logged}/${weights.length}\n\nSave and exit?`)) {
-      Store.saveSession(WorkoutMode.sessionId, secs, weights, notes);
-      WorkoutMode.exit();
+    if (confirm(`Session complete ✓\nDuration: ${dur}\nExercises logged: ${logged}/${exData.length}\n\nSave and exit?`)) {
+      Store.saveSession(WorkoutMode.sessionId, secs, exData, notes);
+      WorkoutMode.finish();
       this.goTab('log');
     }
   },
@@ -2037,13 +2395,35 @@ const App = {
     card.classList.toggle('cues-open', !open);
   },
 
-  handleWeight(input) {
-    const exId = input.getAttribute('data-ex-id');
-    const w = parseFloat(input.value);
-    if (!exId || isNaN(w) || w <= 0) return;
-    WorkoutMode.pendingWeights[exId] = w;
+  // ── Per-set weight / reps / RIR input ────────────────────
+  handleSetInput(input) {
     input.classList.add('saved');
-    setTimeout(() => input.classList.remove('saved'), 1200);
+    setTimeout(() => input.classList.remove('saved'), 800);
+    WorkoutMode.persist();
+  },
+
+  // ── Per-exercise notes ────────────────────────────────────
+  toggleExNotes(btn) {
+    const section = btn.closest('.ex-notes-section');
+    const ta = section?.querySelector('.ex-notes-input');
+    if (!ta) return;
+    const opening = ta.classList.contains('hidden');
+    ta.classList.toggle('hidden');
+    if (opening) {
+      ta.focus();
+      btn.textContent = '▴ Hide note';
+    } else {
+      btn.textContent = ta.value.trim() ? '✎ Edit note' : '✎ Add note';
+    }
+  },
+
+  handleExNote(ta) {
+    WorkoutMode.persistDebounced();
+  },
+
+  // ── Session-level notes ───────────────────────────────────
+  handleSessionNote(ta) {
+    WorkoutMode.persistDebounced();
   },
 
   markDone(btn) {
@@ -2051,16 +2431,133 @@ const App = {
     const isDone = card.classList.toggle('done');
     btn.textContent = isDone ? '✓' : '○';
     vib(isDone ? [30,20,30] : 15);
-    // Auto-save weight
-    const inp = card.querySelector('.ex-weight-input');
-    if (inp && inp.value) this.handleWeight(inp);
+    WorkoutMode.updateProgress();
+    WorkoutMode.persist();
     // Scroll next
     if (isDone) {
-      WorkoutMode.updateProgress();
       const all = Array.from(document.querySelectorAll('.ex-card'));
       const next = all[all.indexOf(card) + 1];
       if (next) setTimeout(() => next.scrollIntoView({ behavior:'smooth', block:'nearest' }), 200);
     }
+  },
+
+  // ── Plate calculator ──────────────────────────────────────
+  _calcSides: 2,
+
+  openPlateCalc(exId) {
+    const exInfo = Object.values(SESSIONS).flatMap(s => s.exercises).find(e => e.id === exId);
+    const name = exInfo?.name || exId;
+
+    const card = document.querySelector(`.ex-card[data-ex-id="${exId}"]`);
+    const firstWeight = card?.querySelector('.ex-set-weight')?.value;
+    const targetVal = firstWeight || Store.recommended(exId, exInfo?.incrPct) || '';
+    const base = Store.getMachineBase(exId);
+    this._calcSides = 2;
+    this._calcExId = exId;
+
+    document.getElementById('calc-modal')?.remove();
+    const modal = document.createElement('div');
+    modal.id = 'calc-modal';
+    modal.innerHTML = `
+      <div class="edit-backdrop" onclick="App.closePlateCalc()"></div>
+      <div class="edit-sheet calc-sheet">
+        <div class="edit-header">
+          <div style="font-family:var(--fn-head);font-size:18px;font-weight:800;">Plate Calculator</div>
+          <button onclick="App.closePlateCalc()" style="background:none;border:none;color:var(--text3);font-size:20px;padding:4px 8px;cursor:pointer;">✕</button>
+        </div>
+        <div class="edit-body">
+          <div style="font-size:12px;color:var(--text3);margin-bottom:14px;">${name}</div>
+
+          <div class="edit-field-row">
+            <label class="edit-label">Target total weight (kg)</label>
+            <input id="calc-target" type="number" inputmode="decimal" step="0.25" value="${targetVal}"
+              oninput="App.updatePlateCalc()"
+              style="padding:9px 10px;background:var(--bg);border:1px solid var(--border2);border-radius:var(--r);
+                     color:var(--text);font-family:var(--fn-mono);font-size:18px;font-weight:600;text-align:center;">
+          </div>
+
+          <div class="edit-field-row">
+            <label class="edit-label">Machine base weight — both sides (kg)</label>
+            <input id="calc-base" type="number" inputmode="decimal" step="0.25" value="${base || ''}" placeholder="0"
+              oninput="App.updatePlateCalc()"
+              style="padding:9px 10px;background:var(--bg);border:1px solid var(--border2);border-radius:var(--r);
+                     color:var(--text);font-family:var(--fn-mono);font-size:18px;font-weight:600;text-align:center;">
+          </div>
+
+          <div class="edit-field-row">
+            <label class="edit-label">Loading points</label>
+            <div class="calc-sides-btns">
+              <button class="calc-side-btn active" data-sides="2" onclick="App.setCalcSides(2,this)" type="button">2 sides</button>
+              <button class="calc-side-btn" data-sides="1" onclick="App.setCalcSides(1,this)" type="button">1 side</button>
+            </div>
+          </div>
+
+          <div class="calc-result">
+            <div class="calc-result-label" id="calc-result-label">Plates per side</div>
+            <div class="calc-result-val" id="calc-result-val">—</div>
+          </div>
+        </div>
+        <div class="edit-footer">
+          <button onclick="App.closePlateCalc()"
+            style="background:none;border:1px solid var(--border2);border-radius:var(--r);
+                   color:var(--text2);padding:9px 16px;font-size:12px;font-weight:600;cursor:pointer;">
+            Cancel
+          </button>
+          <button onclick="App.applyPlateCalc('${exId}')"
+            style="background:var(--gold);border:none;border-radius:var(--r);
+                   color:var(--bg);padding:9px 20px;font-size:12px;font-weight:700;cursor:pointer;">
+            Apply to Set 1
+          </button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+    requestAnimationFrame(() => modal.classList.add('open'));
+    this.updatePlateCalc();
+  },
+
+  setCalcSides(n, btn) {
+    this._calcSides = n;
+    document.querySelectorAll('.calc-side-btn').forEach(b => b.classList.toggle('active', b === btn));
+    this.updatePlateCalc();
+  },
+
+  updatePlateCalc() {
+    const target = parseFloat(el('calc-target')?.value);
+    const base = parseFloat(el('calc-base')?.value) || 0;
+    const out = el('calc-result-val');
+    const lbl = el('calc-result-label');
+    if (!out) return;
+    if (isNaN(target)) { out.textContent = '—'; return; }
+    const perSide = (target - base) / this._calcSides;
+    lbl.textContent = this._calcSides === 2 ? 'Plates per side' : 'Plates to load';
+    if (perSide < 0) {
+      out.innerHTML = `<span style="color:var(--hades);">${perSide.toFixed(2)}kg</span>`;
+      out.title = 'Target is below the machine base weight';
+    } else {
+      out.textContent = `${perSide.toFixed(2)}kg`;
+    }
+  },
+
+  applyPlateCalc(exId) {
+    const target = parseFloat(el('calc-target')?.value);
+    const base = parseFloat(el('calc-base')?.value) || 0;
+    if (!isNaN(target)) {
+      const card = document.querySelector(`.ex-card[data-ex-id="${exId}"]`);
+      const firstInput = card?.querySelector('.ex-set-weight');
+      if (firstInput) {
+        firstInput.value = target;
+        firstInput.classList.add('saved');
+        setTimeout(() => firstInput.classList.remove('saved'), 800);
+      }
+    }
+    Store.setMachineBase(exId, base);
+    WorkoutMode.persist();
+    this.closePlateCalc();
+  },
+
+  closePlateCalc() {
+    const m = el('calc-modal');
+    if (m) { m.classList.remove('open'); setTimeout(() => m.remove(), 250); }
   },
 
   // ── Rest timer ──────────────────────────────────────────
@@ -2168,16 +2665,39 @@ const App = {
     const exRows = (sess.exercises || []).map(e => {
       const exInfo = sessInfo.exercises.find(x => x.id === e.exId);
       const name = exInfo ? exInfo.name : e.exId;
-      return `<div class="edit-ex-row">
-        <div class="edit-ex-name">${name}</div>
-        <div style="display:flex;align-items:center;gap:6px;">
-          <input class="edit-weight-inp" type="number" inputmode="decimal"
-            step="0.25" value="${e.weight || ''}" data-ex-id="${e.exId}" placeholder="kg"
-            style="width:72px;padding:7px 8px;background:var(--bg);border:1px solid var(--border2);
-                   border-radius:var(--r);color:var(--text);font-family:var(--fn-mono);font-size:16px;text-align:center;">
-          <span style="font-size:11px;color:var(--text3);">kg</span>
-        </div>
-      </div>`;
+
+      if (e.sets) {
+        // New format — compact per-set weight/reps/RIR editor + note
+        const setRows = e.sets.map((st,i) => `
+          <div class="edit-set-row">
+            <div class="edit-set-num">${i+1}</div>
+            <input class="edit-set-inp" type="number" inputmode="decimal" step="0.5" placeholder="kg"
+              value="${st.weight ?? ''}" data-ex-id="${e.exId}" data-set-idx="${i}" data-field="weight">
+            <input class="edit-set-inp" type="number" inputmode="numeric" placeholder="reps"
+              value="${st.reps ?? ''}" data-ex-id="${e.exId}" data-set-idx="${i}" data-field="reps">
+            <input class="edit-set-inp" type="number" inputmode="numeric" placeholder="RIR"
+              value="${st.rir ?? ''}" data-ex-id="${e.exId}" data-set-idx="${i}" data-field="rir">
+          </div>`).join('');
+        return `<div class="edit-ex-block" data-ex-id="${e.exId}" data-format="sets">
+          <div class="edit-ex-name">${name}</div>
+          <div class="edit-sets-grid-hdr"><div></div><div>kg</div><div>reps</div><div>RIR</div></div>
+          ${setRows}
+          <textarea class="edit-ex-note-inp" data-ex-id="${e.exId}" rows="1"
+            placeholder="Note for this exercise…">${e.notes || ''}</textarea>
+        </div>`;
+      } else {
+        // Old format — single weight value
+        return `<div class="edit-ex-row" data-ex-id="${e.exId}" data-format="weight">
+          <div class="edit-ex-name">${name}</div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <input class="edit-weight-inp" type="number" inputmode="decimal"
+              step="0.25" value="${e.weight || ''}" data-ex-id="${e.exId}" placeholder="kg"
+              style="width:72px;padding:7px 8px;background:var(--bg);border:1px solid var(--border2);
+                     border-radius:var(--r);color:var(--text);font-family:var(--fn-mono);font-size:16px;text-align:center;">
+            <span style="font-size:11px;color:var(--text3);">kg</span>
+          </div>
+        </div>`;
+      }
     }).join('');
 
     const modal = document.createElement('div');
@@ -2196,10 +2716,10 @@ const App = {
               style="padding:8px 10px;background:var(--bg);border:1px solid var(--border2);
                      border-radius:var(--r);color:var(--text);font-family:var(--fn-body);font-size:13px;">
           </div>
-          <div style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--text3);margin:14px 0 8px;">Weights</div>
+          <div style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--text3);margin:14px 0 8px;">Exercises</div>
           <div id="edit-ex-list">${exRows}</div>
           <div class="edit-field-row" style="margin-top:12px;">
-            <label class="edit-label">Notes</label>
+            <label class="edit-label">Session Notes</label>
             <textarea id="edit-notes" rows="2"
               style="width:100%;padding:8px 10px;background:var(--bg);border:1px solid var(--border2);
                      border-radius:var(--r);color:var(--text);font-family:var(--fn-body);font-size:13px;resize:none;"
@@ -2237,12 +2757,28 @@ const App = {
     const newDate = el('edit-date')?.value || oldDate;
     const newNotes = el('edit-notes')?.value || '';
 
-    // Collect updated weights
+    // Collect updated exercise data — both old (single weight) and new (sets) formats
     const updatedExercises = [];
-    document.querySelectorAll('.edit-weight-inp').forEach(inp => {
-      const exId = inp.getAttribute('data-ex-id');
-      const w = parseFloat(inp.value);
-      if (exId) updatedExercises.push({ exId, weight: isNaN(w) ? null : w });
+    document.querySelectorAll('#edit-ex-list > [data-ex-id]').forEach(block => {
+      const exId = block.getAttribute('data-ex-id');
+      if (block.getAttribute('data-format') === 'sets') {
+        const sets = Array.from(block.querySelectorAll('.edit-set-row')).map(row => {
+          const w   = row.querySelector('[data-field="weight"]')?.value;
+          const r   = row.querySelector('[data-field="reps"]')?.value;
+          const rir = row.querySelector('[data-field="rir"]')?.value;
+          return {
+            weight: (w !== '' && w != null) ? parseFloat(w) : null,
+            reps:   (r !== '' && r != null) ? parseInt(r,10) : null,
+            rir:    (rir !== '' && rir != null) ? parseInt(rir,10) : null,
+          };
+        });
+        const notes = block.querySelector('.edit-ex-note-inp')?.value.trim() || '';
+        updatedExercises.push({ exId, sets, notes });
+      } else {
+        const inp = block.querySelector('.edit-weight-inp');
+        const w = parseFloat(inp?.value);
+        updatedExercises.push({ exId, weight: isNaN(w) ? null : w });
+      }
     });
 
     // Update session record
@@ -2254,11 +2790,19 @@ const App = {
       notes: newNotes
     };
 
-    // Update exerciseLog — remove old entries for this session's date, re-add with new values
-    updatedExercises.forEach(({ exId, weight }) => {
+    // Update exerciseLog — remove old entries for this session's date, re-add with new values.
+    // For sets-format entries, the logged value is the heaviest non-empty set weight.
+    updatedExercises.forEach(entry => {
+      const { exId } = entry;
+      let weight = null;
+      if (entry.sets) {
+        const weights = entry.sets.map(s=>s.weight).filter(w=>w!==null && !isNaN(w) && w>0);
+        if (weights.length) weight = Math.max(...weights);
+      } else {
+        weight = entry.weight;
+      }
       if (!weight) return;
       if (!d.exerciseLog[exId]) d.exerciseLog[exId] = [];
-      // Find and update the entry matching the old date (by date match)
       const existing = d.exerciseLog[exId].find(e => e.date === oldDate);
       if (existing) {
         existing.weight = weight;
@@ -2327,4 +2871,20 @@ const App = {
 document.addEventListener('DOMContentLoaded', function () {
   Store.initFromSeed();
   App.goTab('home');
+
+  // Restore an in-progress workout if the app was reloaded or backgrounded
+  // mid-session. If it was maximised, reopen the overlay exactly as it was;
+  // if minimised, just bring back the floating pill.
+  const active = Store.getActiveSession();
+  if (active && active.sessionId) {
+    WorkoutMode._restore(active);
+  }
+});
+
+// Extra safety — persist state whenever the tab is hidden (app switch,
+// screen lock, etc.) in case the OS reclaims the page before it reloads.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden' && WorkoutMode.sessionId) {
+    WorkoutMode.persist();
+  }
 });
