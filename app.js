@@ -306,13 +306,28 @@ const Store = {
   },
 
   // ── Bodyweight ──────────────────────────────────────────
-  logBW(weight) {
+  logBW(weight, date) {
     const d = this.get();
-    const entry = { ts: Date.now(), date: todayStr(), weight: +parseFloat(weight).toFixed(1) };
-    d.bwLog.push(entry);
-    d.profile.bodyweight = entry.weight;
+    const dateStr = date || todayStr();
+    const entry = {
+      ts: new Date(dateStr + 'T12:00:00').getTime(),
+      date: dateStr,
+      weight: +parseFloat(weight).toFixed(1)
+    };
+    // Upsert — replace existing entry for this date rather than appending
+    const idx = d.bwLog.findIndex(e => e.date === dateStr);
+    if (idx >= 0) d.bwLog[idx] = entry;
+    else { d.bwLog.push(entry); d.bwLog.sort((a,b) => a.date.localeCompare(b.date)); }
+    d.profile.bodyweight = d.bwLog[d.bwLog.length - 1].weight; // keep profile in sync with latest
     this.set(d);
     return entry;
+  },
+
+  deleteBWEntry(date) {
+    const d = this.get();
+    d.bwLog = d.bwLog.filter(e => e.date !== date);
+    if (d.bwLog.length) d.profile.bodyweight = d.bwLog[d.bwLog.length-1].weight;
+    this.set(d);
   },
 
   getBWHistory(days) {
@@ -328,17 +343,60 @@ const Store = {
   },
 
   // ── Sleep log ────────────────────────────────────────────
-  logSleep(hours, quality) {
+  logSleep(hours, quality, date) {
     const d = this.get();
     if (!d.sleepLog) d.sleepLog = [];
-    // Remove any existing entry for today
-    const today = todayStr();
-    const idx = d.sleepLog.findIndex(e => e.date === today);
-    const entry = { date: today, ts: Date.now(), hours: +parseFloat(hours).toFixed(1), quality: +quality };
+    const dateStr = date || todayStr();
+    const entry = {
+      date: dateStr,
+      ts: new Date(dateStr + 'T12:00:00').getTime(),
+      hours: +parseFloat(hours).toFixed(1),
+      quality: +quality
+    };
+    const idx = d.sleepLog.findIndex(e => e.date === dateStr);
     if (idx >= 0) d.sleepLog[idx] = entry;
-    else d.sleepLog.push(entry);
+    else { d.sleepLog.push(entry); d.sleepLog.sort((a,b) => a.date.localeCompare(b.date)); }
     this.set(d);
     return entry;
+  },
+
+  deleteSleepEntry(date) {
+    const d = this.get();
+    d.sleepLog = (d.sleepLog || []).filter(e => e.date !== date);
+    this.set(d);
+  },
+
+  // Returns one entry per day for `days` days ending today.
+  // Unlogged days are filled with 7h (the assumed default) and flagged {assumed:true}.
+  getFilledSleepHistory(days) {
+    const log = this.get().sleepLog || [];
+    const byDate = {};
+    log.forEach(e => { byDate[e.date] = e; });
+    const result = [];
+    for (let i = days - 1; i >= 0; i--) {
+      const dt = new Date(); dt.setDate(dt.getDate() - i);
+      const dateStr = dt.toISOString().slice(0, 10);
+      if (byDate[dateStr]) {
+        result.push({ ...byDate[dateStr], assumed: false });
+      } else {
+        result.push({ date: dateStr, hours: 7, quality: null, assumed: true });
+      }
+    }
+    return result;
+  },
+
+  getSleepStats(days) {
+    const filled = this.getFilledSleepHistory(days);
+    const logged  = filled.filter(e => !e.assumed);
+    const avgHours = +(filled.reduce((s, e) => s + e.hours, 0) / filled.length).toFixed(1);
+    const avgQuality = logged.length
+      ? +(logged.reduce((s, e) => s + (e.quality || 0), 0) / logged.length).toFixed(1)
+      : null;
+    // Total sleep debt vs 8h target, then express as weekly rate
+    const totalDebt = filled.reduce((s, e) => s + Math.max(0, 8 - e.hours), 0);
+    const weeklyDebt = +(totalDebt / (days / 7)).toFixed(1);
+    const loggedPct  = Math.round((logged.length / filled.length) * 100);
+    return { avgHours, avgQuality, weeklyDebt, loggedPct, loggedCount: logged.length, totalDays: filled.length };
   },
 
   getSleepHistory(days) {
@@ -812,6 +870,83 @@ const Charts = {
       ctx.beginPath(); ctx.arc(x,y,3*devicePixelRatio,0,Math.PI*2);
       ctx.fillStyle='#00E587'; ctx.fill();
     });
+  },
+
+  sleepChart(canvas, entries) {
+    // entries from getFilledSleepHistory — one per day, may have assumed:true
+    if (!canvas || !entries.length) return;
+    const ctx = canvas.getContext('2d');
+    const DPR = window.devicePixelRatio || 1;
+    const W   = canvas.offsetWidth  * DPR;
+    const H   = canvas.offsetHeight * DPR;
+    canvas.width = W; canvas.height = H;
+    const PAD = { t:24*DPR, r:8*DPR, b:24*DPR, l:28*DPR };
+    const cW = W - PAD.l - PAD.r;
+    const cH = H - PAD.t - PAD.b;
+
+    const maxH  = Math.max(9, ...entries.map(e => e.hours)) * 1.08;
+    const sy    = v => PAD.t + cH - (v / maxH) * cH;
+    const slotW = cW / entries.length;
+    const barW  = Math.max(2*DPR, slotW * 0.72);
+
+    // Reference lines — 7h default, 8h target
+    [
+      { h:8, col:'#9B6DFF', lbl:'8h' },
+      { h:7, col:'#C9A84C', lbl:'7h' },
+    ].forEach(({ h, col, lbl }) => {
+      const y = sy(h);
+      ctx.save();
+      ctx.strokeStyle = col; ctx.lineWidth = DPR; ctx.globalAlpha = 0.45;
+      ctx.setLineDash([4*DPR, 4*DPR]);
+      ctx.beginPath(); ctx.moveTo(PAD.l, y); ctx.lineTo(W-PAD.r, y); ctx.stroke();
+      ctx.setLineDash([]); ctx.globalAlpha = 1;
+      ctx.fillStyle = col;
+      ctx.font = `${8*DPR}px DM Sans,sans-serif`;
+      ctx.textAlign = 'right';
+      ctx.fillText(lbl, W - PAD.r, y - 3*DPR);
+      ctx.restore();
+    });
+
+    // Bars
+    entries.forEach((e, i) => {
+      const x  = PAD.l + i * slotW + (slotW - barW) / 2;
+      const bH = Math.max(2*DPR, (e.hours / maxH) * cH);
+      const y  = PAD.t + cH - bH;
+
+      let col;
+      if (e.assumed) {
+        col = 'rgba(201,168,76,0.18)'; // faint gold — assumed 7h
+      } else if (!e.quality) {
+        col = '#4DA6FF99';
+      } else if (e.quality >= 4) {
+        col = '#00E587CC';
+      } else if (e.quality >= 3) {
+        col = '#C9A84CCC';
+      } else {
+        col = '#FF5C2BCC';
+      }
+
+      ctx.fillStyle = col;
+      if (ctx.roundRect) {
+        ctx.beginPath(); ctx.roundRect(x, y, barW, bH, [2*DPR, 2*DPR, 0, 0]); ctx.fill();
+      } else {
+        ctx.fillRect(x, y, barW, bH);
+      }
+    });
+
+    // Y axis labels
+    ctx.fillStyle = '#585856'; ctx.textAlign = 'right';
+    ctx.font = `${9*DPR}px DM Sans,sans-serif`;
+    [5, 6, 7, 8, 9].forEach(h => {
+      if (h <= maxH) ctx.fillText(String(h), PAD.l - 4*DPR, sy(h) + 3*DPR);
+    });
+
+    // X axis: first and last dates
+    if (entries.length >= 2) {
+      ctx.fillStyle = '#585856'; ctx.font = `${8*DPR}px DM Sans,sans-serif`;
+      ctx.textAlign = 'left';  ctx.fillText(entries[0].date.slice(5), PAD.l, H - PAD.b + 12*DPR);
+      ctx.textAlign = 'right'; ctx.fillText(entries[entries.length-1].date.slice(5), W - PAD.r, H - PAD.b + 12*DPR);
+    }
   },
 
   strengthChart(canvas, entries, standard, bw) {
@@ -1296,6 +1431,29 @@ const Views = {
         </div>
       </div>
 
+      <!-- Bodyweight log -->
+      <div class="section-label">Bodyweight Log</div>
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px 8px;">
+          <div style="font-size:12px;color:var(--text3);">All measurements — tap to edit</div>
+          <button onclick="App.openBWModal(null, null)"
+            style="background:var(--gold);border:none;border-radius:var(--r);
+                   color:var(--bg);font-size:11px;font-weight:700;padding:6px 12px;cursor:pointer;">
+            + Add
+          </button>
+        </div>
+        ${(() => {
+          const all = [...Store.get().bwLog].reverse(); // newest first
+          if (!all.length) return `<div style="padding:10px 16px 14px;font-size:12px;color:var(--text3);">No measurements logged yet.</div>`;
+          return `<div class="bw-log-list">${all.map(e => `
+            <div class="bw-log-row" onclick="App.openBWModal('${e.date}',${e.weight})">
+              <div class="bw-log-date">${fmtDate(e.date)}</div>
+              <div class="bw-log-weight">${e.weight}<span style="font-size:11px;color:var(--text3);font-weight:400;"> kg</span></div>
+              <div class="bw-log-edit">✎</div>
+            </div>`).join('')}</div>`;
+        })()}
+      </div>
+
       <!-- Exercise progress chart -->
       <div class="section-label">Exercise Progress</div>
       <div class="card chart-card">
@@ -1322,6 +1480,74 @@ const Views = {
           <div class="mono" style="font-size:17px;font-weight:700;color:var(--gold);">${thisWk}</div>
         </div>
       </div>
+
+      <!-- Sleep analysis -->
+      ${(() => {
+        const stats30 = Store.getSleepStats(30);
+        const filled30 = Store.getFilledSleepHistory(30);
+        const sleepLog = [...Store.get().sleepLog || []].reverse(); // newest first for table
+
+        const qualCol = q => !q ? 'var(--text3)' : q >= 4 ? 'var(--atlas)' : q >= 3 ? 'var(--gold)' : 'var(--hades)';
+        const qualStr = q => !q ? '—' : '★'.repeat(q) + '☆'.repeat(5 - q);
+
+        const avgCol = stats30.avgHours >= 8 ? 'var(--atlas)' : stats30.avgHours >= 7 ? 'var(--gold)' : 'var(--hades)';
+        const debtCol = stats30.weeklyDebt <= 3 ? 'var(--atlas)' : stats30.weeklyDebt <= 7 ? 'var(--gold)' : 'var(--hades)';
+
+        const logRows = sleepLog.slice(0, 14).map(e => `
+          <div class="sleep-log-row" onclick="App.openSleepModal('${e.date}',${e.hours},${e.quality})">
+            <div class="sleep-log-date">${fmtDate(e.date)}</div>
+            <div class="sleep-log-hrs" style="color:${qualCol(e.quality)};">${e.hours}h</div>
+            <div class="sleep-log-qual">${qualStr(e.quality)}</div>
+            <div class="sleep-log-edit">✎</div>
+          </div>`).join('');
+
+        return `
+        <div class="section-label">Sleep</div>
+        <div class="card chart-card">
+          <div class="chart-title">30-Day History <span style="font-size:10px;font-weight:400;color:var(--text3);">— faint bars = assumed 7h</span></div>
+          <canvas id="sleep-chart" class="chart-canvas"></canvas>
+          <div class="sleep-chart-legend">
+            <span style="color:var(--atlas);">■ Good (4–5★)</span>
+            <span style="color:var(--gold);">■ OK (3★)</span>
+            <span style="color:var(--hades);">■ Poor (1–2★)</span>
+            <span style="color:rgba(201,168,76,.5);">■ Assumed 7h</span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="sleep-stats-grid">
+            <div class="sleep-stat-box">
+              <div class="sleep-stat-val" style="color:${avgCol};">${stats30.avgHours}h</div>
+              <div class="sleep-stat-lbl">30-day avg</div>
+            </div>
+            <div class="sleep-stat-box">
+              <div class="sleep-stat-val" style="color:${debtCol};">${stats30.weeklyDebt}h</div>
+              <div class="sleep-stat-lbl">debt/wk vs 8h</div>
+            </div>
+            <div class="sleep-stat-box">
+              <div class="sleep-stat-val" style="color:${qualCol(stats30.avgQuality)};">${stats30.avgQuality ?? '—'}</div>
+              <div class="sleep-stat-lbl">avg quality</div>
+            </div>
+            <div class="sleep-stat-box">
+              <div class="sleep-stat-val">${stats30.loggedPct}%</div>
+              <div class="sleep-stat-lbl">nights logged</div>
+            </div>
+          </div>
+          <div class="str-note">Unlogged nights assumed 7h. Sleep debt = hours below 8h/night averaged weekly.</div>
+        </div>
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px 8px;">
+            <div style="font-size:12px;color:var(--text3);">Recent — tap to edit</div>
+            <button onclick="App.openSleepModal(null,null,null)"
+              style="background:var(--gold);border:none;border-radius:var(--r);
+                     color:var(--bg);font-size:11px;font-weight:700;padding:6px 12px;cursor:pointer;">
+              + Add
+            </button>
+          </div>
+          ${sleepLog.length
+            ? `<div class="sleep-log-list">${logRows}</div>`
+            : `<div style="padding:10px 16px 14px;font-size:12px;color:var(--text3);">No sleep logged yet. Log nightly via the Home tab or + Add above.</div>`}
+        </div>`;
+      })()}
 
       <!-- WRT Bodyweight standards -->
       <div class="section-label">Strength Standards — vs Bodyweight</div>
@@ -2309,10 +2535,17 @@ const App = {
   _afterRender(tab) {
     if (tab === 'stats') {
       requestAnimationFrame(() => {
+        // Bodyweight trend
         const bwCanvas = el('bw-chart');
         if (bwCanvas) {
           const hist = Store.getBWHistory(90);
           Charts.bwTrend(bwCanvas, hist, Store.get().profile.targetWeight);
+        }
+        // Sleep chart
+        const sleepCanvas = el('sleep-chart');
+        if (sleepCanvas) {
+          const filled = Store.getFilledSleepHistory(30);
+          Charts.sleepChart(sleepCanvas, filled);
         }
         // Auto-select first exercise with enough data for a chart
         const sel = el('ex-select');
@@ -2567,6 +2800,7 @@ const App = {
 
   // ── Bodyweight ──────────────────────────────────────────
   logBW() {
+    // Quick-log from home tab (always today)
     const inp = el('bw-quick-input');
     if (!inp) return;
     const w = parseFloat(inp.value);
@@ -2574,6 +2808,168 @@ const App = {
     Store.logBW(w);
     inp.value = '';
     this.goTab('home');
+  },
+
+  // ── Bodyweight entry modal (add or edit) ──────────────────
+  openBWModal(date, weight) {
+    document.getElementById('bw-entry-modal')?.remove();
+    const isEdit = !!date;
+    const modal = document.createElement('div');
+    modal.id = 'bw-entry-modal';
+    modal.innerHTML = `
+      <div class="edit-backdrop" onclick="App.closeBWModal()"></div>
+      <div class="edit-sheet" style="max-height:50vh;">
+        <div class="edit-header">
+          <div style="font-family:var(--fn-head);font-size:18px;font-weight:800;">
+            ${isEdit ? 'Edit' : 'Add'} Measurement
+          </div>
+          <button onclick="App.closeBWModal()" style="background:none;border:none;color:var(--text3);font-size:20px;padding:4px 8px;cursor:pointer;">✕</button>
+        </div>
+        <div class="edit-body">
+          <div class="edit-field-row">
+            <label class="edit-label">Date</label>
+            <input id="bw-modal-date" type="date" value="${date || todayStr()}"
+              style="padding:8px 10px;background:var(--bg);border:1px solid var(--border2);
+                     border-radius:var(--r);color:var(--text);font-family:var(--fn-body);font-size:13px;width:100%;">
+          </div>
+          <div class="edit-field-row">
+            <label class="edit-label">Weight (kg)</label>
+            <input id="bw-modal-weight" type="number" inputmode="decimal" step="0.1"
+              value="${weight || ''}" placeholder="e.g. 83.4"
+              style="padding:10px;background:var(--bg);border:2px solid var(--border2);
+                     border-radius:var(--r);color:var(--text);font-family:var(--fn-mono);
+                     font-size:24px;font-weight:700;text-align:center;width:100%;">
+          </div>
+        </div>
+        <div class="edit-footer">
+          ${isEdit ? `
+          <button onclick="App.deleteBWEntry('${date}')"
+            style="background:none;border:1px solid var(--hades);border-radius:var(--r);
+                   color:var(--hades);padding:9px 14px;font-size:12px;font-weight:600;cursor:pointer;">
+            Delete
+          </button>` : '<div></div>'}
+          <button onclick="App.saveBWModal()"
+            style="background:var(--gold);border:none;border-radius:var(--r);
+                   color:var(--bg);padding:9px 20px;font-size:12px;font-weight:700;cursor:pointer;">
+            Save
+          </button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+    requestAnimationFrame(() => { modal.classList.add('open'); el('bw-modal-weight').focus(); });
+  },
+
+  saveBWModal() {
+    const date   = el('bw-modal-date')?.value;
+    const weight = parseFloat(el('bw-modal-weight')?.value);
+    if (!date || isNaN(weight) || weight < 30 || weight > 300) {
+      el('bw-modal-weight')?.focus(); return;
+    }
+    Store.logBW(weight, date);
+    this.closeBWModal();
+    setTimeout(() => this.goTab('stats'), 280);
+  },
+
+  deleteBWEntry(date) {
+    if (!confirm(`Delete measurement for ${fmtDate(date)}?`)) return;
+    Store.deleteBWEntry(date);
+    this.closeBWModal();
+    setTimeout(() => this.goTab('stats'), 280);
+  },
+
+  closeBWModal() {
+    const m = el('bw-entry-modal');
+    if (m) { m.classList.remove('open'); setTimeout(() => m.remove(), 280); }
+  },
+
+  // ── Sleep entry modal (add or edit) ──────────────────────
+  _sleepModalQuality: 4,
+
+  openSleepModal(date, hours, quality) {
+    document.getElementById('sleep-entry-modal')?.remove();
+    const isEdit = !!date;
+    this._sleepModalQuality = quality || 4;
+    const modal = document.createElement('div');
+    modal.id = 'sleep-entry-modal';
+    modal.innerHTML = `
+      <div class="edit-backdrop" onclick="App.closeSleepModal()"></div>
+      <div class="edit-sheet" style="max-height:60vh;">
+        <div class="edit-header">
+          <div style="font-family:var(--fn-head);font-size:18px;font-weight:800;">
+            ${isEdit ? 'Edit' : 'Log'} Sleep
+          </div>
+          <button onclick="App.closeSleepModal()" style="background:none;border:none;color:var(--text3);font-size:20px;padding:4px 8px;cursor:pointer;">✕</button>
+        </div>
+        <div class="edit-body">
+          <div class="edit-field-row">
+            <label class="edit-label">Date (night of)</label>
+            <input id="sleep-modal-date" type="date" value="${date || todayStr()}"
+              style="padding:8px 10px;background:var(--bg);border:1px solid var(--border2);
+                     border-radius:var(--r);color:var(--text);font-family:var(--fn-body);font-size:13px;width:100%;">
+          </div>
+          <div class="edit-field-row">
+            <label class="edit-label">Hours slept</label>
+            <input id="sleep-modal-hours" type="number" inputmode="decimal" step="0.5" min="3" max="12"
+              value="${hours || ''}" placeholder="7.0"
+              style="padding:10px;background:var(--bg);border:2px solid var(--border2);
+                     border-radius:var(--r);color:var(--text);font-family:var(--fn-mono);
+                     font-size:24px;font-weight:700;text-align:center;width:100%;">
+          </div>
+          <div class="edit-field-row">
+            <label class="edit-label">Quality</label>
+            <div class="sleep-quality-btns" id="sleep-modal-quality-btns">
+              ${[1,2,3,4,5].map(q=>`
+              <button class="sleep-q-btn ${q <= this._sleepModalQuality ? 'active' : ''}"
+                data-q="${q}" onclick="App.setSleepModalQuality(${q})" type="button">${q}★</button>`).join('')}
+            </div>
+          </div>
+        </div>
+        <div class="edit-footer">
+          ${isEdit ? `
+          <button onclick="App.deleteSleepEntry('${date}')"
+            style="background:none;border:1px solid var(--hades);border-radius:var(--r);
+                   color:var(--hades);padding:9px 14px;font-size:12px;font-weight:600;cursor:pointer;">
+            Delete
+          </button>` : '<div></div>'}
+          <button onclick="App.saveSleepModal()"
+            style="background:var(--gold);border:none;border-radius:var(--r);
+                   color:var(--bg);padding:9px 20px;font-size:12px;font-weight:700;cursor:pointer;">
+            Save
+          </button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+    requestAnimationFrame(() => { modal.classList.add('open'); el('sleep-modal-hours').focus(); });
+  },
+
+  setSleepModalQuality(q) {
+    this._sleepModalQuality = q;
+    document.querySelectorAll('#sleep-modal-quality-btns .sleep-q-btn').forEach(btn => {
+      btn.classList.toggle('active', +btn.dataset.q <= q);
+    });
+  },
+
+  saveSleepModal() {
+    const date  = el('sleep-modal-date')?.value;
+    const hours = parseFloat(el('sleep-modal-hours')?.value);
+    if (!date || isNaN(hours) || hours < 2 || hours > 14) {
+      el('sleep-modal-hours')?.focus(); return;
+    }
+    Store.logSleep(hours, this._sleepModalQuality, date);
+    this.closeSleepModal();
+    setTimeout(() => this.goTab('stats'), 280);
+  },
+
+  deleteSleepEntry(date) {
+    if (!confirm(`Remove sleep log for ${fmtDate(date)}?`)) return;
+    Store.deleteSleepEntry(date);
+    this.closeSleepModal();
+    setTimeout(() => this.goTab('stats'), 280);
+  },
+
+  closeSleepModal() {
+    const m = el('sleep-entry-modal');
+    if (m) { m.classList.remove('open'); setTimeout(() => m.remove(), 280); }
   },
 
   updateStdBW(val) {
