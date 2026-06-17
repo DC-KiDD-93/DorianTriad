@@ -478,21 +478,52 @@ const Store = {
   importData(jsonStr) {
     let incoming;
     try { incoming = JSON.parse(jsonStr); } catch(_) { throw new Error('Invalid file — could not parse JSON.'); }
-    if (!incoming.sessions || !incoming.exerciseLog) throw new Error('Invalid backup file format.');
+    if (!incoming.sessions && !incoming.exerciseLog && !incoming.bwLog) throw new Error('Invalid backup file format.');
     const d = this.get();
-    // Merge sessions — skip any already present by ID
-    const existIds = new Set(d.sessions.map(s => s.id));
-    const newSess = incoming.sessions.filter(s => !existIds.has(s.id));
-    d.sessions = [...d.sessions, ...newSess].sort((a,b) => b.date.localeCompare(a.date));
-    // Merge exercise log entries — skip duplicates by timestamp
-    Object.entries(incoming.exerciseLog).forEach(([exId, entries]) => {
-      if (!d.exerciseLog[exId]) d.exerciseLog[exId] = [];
-      const existing = new Set(d.exerciseLog[exId].map(e => e.ts));
-      const newEntries = entries.filter(e => !existing.has(e.ts));
-      d.exerciseLog[exId] = [...d.exerciseLog[exId], ...newEntries].sort((a,b) => a.ts - b.ts);
-    });
+
+    // Merge sessions
+    if (incoming.sessions && incoming.sessions.length) {
+      const existIds = new Set(d.sessions.map(s => s.id));
+      const newSess = incoming.sessions.filter(s => !existIds.has(s.id));
+      d.sessions = [...d.sessions, ...newSess].sort((a,b) => b.date.localeCompare(a.date));
+    }
+
+    // Merge exercise log entries
+    if (incoming.exerciseLog) {
+      Object.entries(incoming.exerciseLog).forEach(([exId, entries]) => {
+        if (!d.exerciseLog[exId]) d.exerciseLog[exId] = [];
+        const existing = new Set(d.exerciseLog[exId].map(e => e.ts));
+        const newEntries = entries.filter(e => !existing.has(e.ts));
+        d.exerciseLog[exId] = [...d.exerciseLog[exId], ...newEntries].sort((a,b) => a.ts - b.ts);
+      });
+    }
+
+    // Merge bodyweight log — upsert by date so duplicates don't accumulate
+    if (incoming.bwLog && incoming.bwLog.length) {
+      const byDate = {};
+      d.bwLog.forEach(e => { byDate[e.date] = e; });
+      incoming.bwLog.forEach(e => {
+        // Only overwrite if incoming entry is earlier (prefer keeping the user's manually entered value)
+        if (!byDate[e.date]) byDate[e.date] = e;
+      });
+      d.bwLog = Object.values(byDate).sort((a,b) => a.date.localeCompare(b.date));
+      // Keep profile.bodyweight in sync with latest entry
+      if (d.bwLog.length) d.profile.bodyweight = d.bwLog[d.bwLog.length-1].weight;
+    }
+
+    // Merge sleep log
+    if (incoming.sleepLog && incoming.sleepLog.length) {
+      if (!d.sleepLog) d.sleepLog = [];
+      const sleepByDate = {};
+      d.sleepLog.forEach(e => { sleepByDate[e.date] = e; });
+      incoming.sleepLog.forEach(e => { if (!sleepByDate[e.date]) sleepByDate[e.date] = e; });
+      d.sleepLog = Object.values(sleepByDate).sort((a,b) => a.date.localeCompare(b.date));
+    }
+
     this.set(d);
-    return newSess.length;
+    const sessCount = incoming.sessions?.length || 0;
+    const bwCount = incoming.bwLog?.length || 0;
+    return { sessions: sessCount, bwEntries: bwCount };
   },
 
   initFromSeed() {
@@ -3248,15 +3279,18 @@ const App = {
     const reader = new FileReader();
     reader.onload = e => {
       try {
-        const count = Store.importData(e.target.result);
-        alert(`Restore complete. ${count} new session${count!==1?'s':''} imported.`);
-        this.goTab('log');
+        const result = Store.importData(e.target.result);
+        const parts = [];
+        if (result.sessions) parts.push(`${result.sessions} session${result.sessions !== 1 ? 's' : ''}`);
+        if (result.bwEntries) parts.push(`${result.bwEntries} weight entries`);
+        alert(`Import complete: ${parts.join(', ') || 'nothing new'} added.`);
+        this.goTab('stats');
       } catch(err) {
-        alert(`Restore failed: ${err.message}`);
+        alert(`Import failed: ${err.message}`);
       }
     };
     reader.readAsText(file);
-    input.value = ''; // Reset so same file can be re-imported
+    input.value = '';
   },
 };
 
